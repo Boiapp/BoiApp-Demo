@@ -1,0 +1,15 @@
+node_modules
+.env
+coverage
+coverage.json
+typechain
+typechain-types
+
+#Hardhat files
+cache
+artifacts
+
+google-services.json
+GoogleService-Info.plist
+config/FirebaseConfig.js
+config/GoogleMapApiConfig.js

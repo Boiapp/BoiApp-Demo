@@ -1,0 +1,198 @@
+{
+    "cancel_reason": [{
+        "label": "Unable to Contact Agent",
+        "value": 0
+    }, {
+        "label": "Agent is not moving in my direction",
+        "value": 1
+    }, {
+        "label": "My reason is not listed",
+        "value": 2
+    }, {
+        "label": "Agent denied duty",
+        "value": 3
+    }, {
+        "label": "Agent is taking long time",
+        "value": 4
+    }],
+    "promos": {
+        "promo1": {
+            "max_promo_discount_value": 10,
+            "min_order": 10,
+            "promo_description": "$10 for Testing",
+            "promo_discount_type": "flat",
+            "promo_discount_value": 10,
+            "promo_name": "Test Promo",
+            "promo_start": "01/01/2022",
+            "promo_usage_limit": 100,
+            "promo_validity": "12/12/2025 ",
+            "user_avail": 0
+        }
+    },
+    "cartypes": {
+        "type1": {
+            "base_fare": 10,
+            "cancelSlab" : [
+            {
+                "amount" : 10,
+                "minsDelayed" : 2
+            },
+            {
+                "amount" : 15,
+                "minsDelayed" : 4
+            }
+            ],
+            "convenience_fee_type": "percentage",
+            "convenience_fees": 15,
+            "extra_info": "Capacity: Below 20 Kg, Type: Small Truck",
+            "image": "https://cdn.pixabay.com/photo/2017/02/01/10/42/pickup-truck-2029550__340.png",
+            "min_fare": 10,
+            "name": "PICKUP TRUCK",
+            "options": [
+            {
+                "amount": 10,
+                "description": "Below 5 KG"
+            },
+            {
+                "amount": 20,
+                "description": "Above 5 KG to 20 KG"
+            }
+            ],
+            "parcelTypes": [
+            {
+                "amount": 0,
+                "description": "Document"
+            },
+            {
+                "amount": 5,
+                "description": "Box"
+            },
+            {
+                "amount": 15,
+                "description": "Fragile or Glass"
+            }
+            ],
+            "rate_per_hour": 5,
+            "rate_per_unit_distance": 5
+        },
+        "type2": {
+            "base_fare": 12,
+            "cancelSlab" : [
+            {
+                "amount" : 15,
+                "minsDelayed" : 2
+            },
+            {
+                "amount" : 20,
+                "minsDelayed" : 4
+            }
+            ],
+            "convenience_fee_type": "percentage",
+            "convenience_fees": 15,
+            "extra_info": "Capacity: Max 50KG, Type: VAN",
+            "image": "https://cdn.pixabay.com/photo/2012/04/25/00/52/minivan-41476__340.png",
+            "min_fare": 20,
+            "name": "MINI VAN",
+            "options": [
+            {
+                "amount": 100,
+                "description": "About 10 kg to 50 kg"
+            }
+            ],
+            "parcelTypes": [
+            {
+                "amount": 10,
+                "description": "Box"
+            },
+            {
+                "amount": 20,
+                "description": "Fragile or Glass"
+            }
+            ],
+            "rate_per_hour": 6,
+            "rate_per_unit_distance": 8
+        },
+        "type3": {
+            "base_fare": 15,
+            "cancelSlab" : [
+                {
+                    "amount" : 20,
+                    "minsDelayed" : 2
+                },
+                {
+                    "amount" : 25,
+                    "minsDelayed" : 4
+                }
+                ],
+            "convenience_fee_type": "percentage",
+            "convenience_fees": 15,
+            "extra_info": "Capacity: Above 50KG, Type: Large Truck",
+            "image": "https://cdn.pixabay.com/photo/2016/10/20/23/34/truck-1756845__340.png",
+            "min_fare": 30,
+            "name": "TRUCK",
+            "options": [
+            {
+                "amount": 100,
+                "description": "Above 50 KG"
+            },
+            {
+                "amount": 200,
+                "description": "Above 100 KG "
+            }
+            ],
+            "parcelTypes": [
+            {
+                "amount": 100,
+                "description": "Box"
+            }
+            ],
+            "rate_per_hour": 8,
+            "rate_per_unit_distance": 10
+        }
+    },
+    "settings": {
+        "appName": "Exicube",
+        "code": "USD",
+        "symbol": "$",
+        "decimal": 2,
+        "driver_approval": false,
+        "otp_secure": false,
+        "bonus": 10,
+        "convert_to_mile": false,
+        "CarHornRepeat": true,
+        "CompanyName": "Exicube App Solutions",
+        "CompanyWebsite": "https://exicube.com",
+        "CompanyTerms": "https://exicubedelivery.web.app/privacy-policy",
+        "TwitterHandle": "https://twitter.com/exicube",
+        "FacebookHandle": "https://facebook.com/exicube",
+        "InstagramHandle": "",
+        "AppleStoreLink": "https://apps.apple.com/app/id1501332146#?platform=iphone",
+        "PlayStoreLink": "https://play.google.com/store/apps/details?id=com.exicube.delivery",
+        "bank_fields": false,
+        "contact_email": "",
+        "AllowCriticalEditsAdmin":true,
+        "AllowCountrySelection":true,
+        "FacebookLoginEnabled":true,
+        "AppleLoginEnabled":true,
+        "autoDispatch":true,
+        "driverRadius": 10,
+        "country": "India",
+        "RiderWithDraw": false,
+        "swipe_symbol": false,
+        "restrictCountry" : "",
+        "negativeBalance": false,
+        "AllowDeliveryPickupImageCapture": true,
+        "AllowFinalDeliveryImageCapture": true,
+        "horizontal_view": false,
+        "showLiveRoute": true,
+        "mapLanguage": "en"
+    },
+    "languages":{
+        "lang1":{
+            "langName": "English",
+            "langLocale": "en",
+            "default":true,
+            "dateLocale": "en-gb"
+        }
+    }
+}
