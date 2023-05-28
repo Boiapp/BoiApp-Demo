@@ -15,7 +15,8 @@ import {
 
 import store from "../store/store";
 import { onAuthStateChanged, signInWithCustomToken } from "firebase/auth";
-import { child, get, onValue, set } from "firebase/database";
+import { child, get, onValue, remove, set } from "firebase/database";
+import { getDownloadURL, uploadBytes } from "firebase/storage";
 
 export const fetchProfile = () => (dispatch) => (firebase) => {
   const { auth, singleUserRef } = firebase;
@@ -118,92 +119,94 @@ export const monitorProfileChanges = () => (dispatch) => (firebase) => {
   });
 };
 
-export const fetchUser = (token) => (dispatch) => async (firebase) => {
-  const { auth, config, singleUserRef } = firebase;
-  dispatch({
-    type: FETCH_USER,
-    payload: null,
-  });
+export const fetchUser =
+  (token, connectionMode) => (dispatch) => async (firebase) => {
+    const { auth, config, singleUserRef } = firebase;
+    dispatch({
+      type: FETCH_USER,
+      payload: null,
+    });
 
-  if (token !== null) {
-    signInWithCustomToken(auth, token)
-      .then((userCredentials) => {
-        const user = userCredentials.user;
-      })
-      .catch((err) => {
-        dispatch({
-          type: FETCH_USER_FAILED,
-          payload: `User not found, ${err} `,
+    if (token !== null) {
+      signInWithCustomToken(auth, token)
+        .then((userCredentials) => {
+          const user = userCredentials.user;
+        })
+        .catch((err) => {
+          dispatch({
+            type: FETCH_USER_FAILED,
+            payload: `User not found, ${err} `,
+          });
         });
-      });
 
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        try {
-          fetch(
-            "https://us-central1-seradd.cloudfunctions.net/newset?projectId=" +
-              config.project
-          )
-            .then((response) => response.json())
-            .then((res) => {
-              if (res.issue) {
-                auth.signOut();
-              }
-            })
-            .catch((error) => {
-              console.log(error);
-            });
-        } catch (error) {}
-        let waitTime = 2000;
-        setTimeout(() => {
-          onValue(
-            singleUserRef(user.uid),
-            (snapshot) => {
-              if (snapshot.val()) {
-                user.profile = snapshot.val();
-                if (user.profile.approved) {
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          try {
+            fetch(
+              "https://us-central1-seradd.cloudfunctions.net/newset?projectId=" +
+                config.project
+            )
+              .then((response) => response.json())
+              .then((res) => {
+                if (res.issue) {
+                  auth.signOut();
+                }
+              })
+              .catch((error) => {
+                console.log(error);
+              });
+          } catch (error) {}
+          let waitTime = 2000;
+          setTimeout(() => {
+            onValue(
+              singleUserRef(user.uid),
+              (snapshot) => {
+                if (snapshot.val()) {
+                  user.profile = snapshot.val();
+                  user.connectionMode = connectionMode;
+                  if (user.profile.approved) {
+                    dispatch({
+                      type: FETCH_USER_SUCCESS,
+                      payload: user,
+                    });
+                  } else {
+                    auth.signOut().then(() => {
+                      dispatch({
+                        type: USER_SIGN_IN_FAILED,
+                        payload: {
+                          code: store.getState().languagedata.defaultLanguage
+                            .auth_error,
+                          message:
+                            store.getState().languagedata.defaultLanguage
+                              .require_approval,
+                        },
+                      });
+                    });
+                  }
+                } else {
                   dispatch({
                     type: FETCH_USER_SUCCESS,
                     payload: user,
                   });
-                } else {
-                  auth.signOut().then(() => {
-                    dispatch({
-                      type: USER_SIGN_IN_FAILED,
-                      payload: {
-                        code: store.getState().languagedata.defaultLanguage
-                          .auth_error,
-                        message:
-                          store.getState().languagedata.defaultLanguage
-                            .require_approval,
-                      },
-                    });
-                  });
                 }
-              } else {
-                dispatch({
-                  type: FETCH_USER_SUCCESS,
-                  payload: user,
-                });
+              },
+              {
+                onlyOnce: true,
               }
-            },
-            {
-              onlyOnce: true,
-            }
-          );
-        }, waitTime);
-      }
-    });
-  } else {
-    dispatch({
-      type: FETCH_USER_FAILED,
-      payload: {
-        code: store.getState().languagedata.defaultLanguage.auth_error,
-        message: store.getState().languagedata.defaultLanguage.not_logged_in,
-      },
-    });
-  }
-};
+            );
+          }, waitTime);
+        }
+      });
+    } else {
+      dispatch({
+        type: FETCH_USER_FAILED,
+        payload: {
+          code: store.getState().languagedata.defaultLanguage.auth_error,
+          message: store.getState().languagedata.defaultLanguage.not_logged_in,
+        },
+      });
+    }
+  };
 /*Legacy  */
 //   auth.onAuthStateChanged((user) => {
 //     if (user) {
@@ -294,6 +297,8 @@ export const fetchUser = (token) => (dispatch) => async (firebase) => {
 //   });
 // };
 
+export const web3authSignIn = (info) => async (firebase) => {};
+
 export const validateReferer = (referralId) => async (firebase) => {
   const { config } = firebase;
   const response = await fetch(
@@ -356,8 +361,13 @@ export const mainSignUp = (regData) => async (firebase) => {
   let createDate = new Date();
   regData.createdAt = createDate.toISOString();
   let timestamp = createDate.getTime();
-  await driverDocsRef(timestamp).put(regData.licenseImage);
-  regData.licenseImage = await driverDocsRef(timestamp).getDownloadURL();
+  await uploadBytes(driverDocsRef(timestamp), regData.licenseImage).catch(
+    (error) => {
+      console.log(error);
+    }
+  );
+  console.log("regData.licenseImage", regData.licenseImage);
+  regData.licenseImage = await getDownloadURL(driverDocsRef(timestamp));
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -654,19 +664,18 @@ export const signOut = () => (dispatch) => (firebase) => {
 
 export const deleteUser = (uid) => (dispatch) => async (firebase) => {
   const { config, singleUserRef, auth } = firebase;
-
-  singleUserRef(uid)
-    .remove()
-    .then(() => {
-      if (auth.currentUser.uid == uid) {
-        auth.signOut().then(() => {
-          dispatch({
-            type: USER_DELETED,
-            payload: null,
-          });
+  console.log("deleteUser", uid);
+  remove(singleUserRef(uid)).then(() => {
+    if (auth.currentUser.uid == uid) {
+      auth.signOut().then(() => {
+        dispatch({
+          type: USER_DELETED,
+          payload: null,
         });
-      }
-    });
+      });
+    }
+  });
+
   const response = await fetch(
     `https://${config.project}.web.app/user_delete`,
     {
@@ -680,7 +689,6 @@ export const deleteUser = (uid) => (dispatch) => async (firebase) => {
     }
   );
   const json = await response.json();
-
   return json;
 };
 

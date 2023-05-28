@@ -35,6 +35,7 @@ import carImageIcon from "../../assets/images/car.png";
 import { mapStyle } from "../../config/mapStyle";
 import { colors } from "../common/theme";
 import { AnimatedMapView } from "react-native-maps/lib/MapView";
+import { ConnectionMode } from "../types/types";
 
 var { width, height } = Dimensions.get("window");
 
@@ -60,6 +61,8 @@ export default function DriverTrips(props) {
   const [pgsErr, setGpsErr] = useState(false);
   const connector = useWalletConnect();
   const [contractLoading, setContractLoading] = useState(false);
+  const connectionMode = auth.info.connectionMode;
+  const driverAddress = auth.info.profile.wallet;
 
   useEffect(() => {
     if (bookinglistdata.bookings) {
@@ -100,7 +103,6 @@ export default function DriverTrips(props) {
         }
       }
     }
-    const driverAddress = connector.accounts[0];
     let alchemy = new ethers.providers.AlchemyProvider("maticmum", API_KEY);
     const ifacePOT = new ethers.utils.Interface(POT.abi);
     const startRide = ifacePOT.encodeFunctionData("startRideByDriver", [
@@ -115,18 +117,26 @@ export default function DriverTrips(props) {
       chainId: 80001,
     };
     try {
-      await connector.sendTransaction(txPOT).then(async (res) => {
-        await alchemy
-          .waitForTransaction(res, 1)
-          .then((res) => {
-            setContractLoading(false);
-            return { res: "success" };
-          })
-          .catch((err) => {
-            setContractLoading(false);
-            console.log("err", err);
-          });
-      });
+      if (connectionMode === ConnectionMode.WALLETCONNECT) {
+        await connector.sendTransaction(txPOT).then(async (res) => {
+          await alchemy
+            .waitForTransaction(res, 1)
+            .then((res) => {
+              setContractLoading(false);
+              return { res: "success" };
+            })
+            .catch((err) => {
+              setContractLoading(false);
+              console.log("err", err);
+            });
+        });
+      } else if (connectionMode === ConnectionMode.WEB3AUTH) {
+        const wallet = new ethers.Wallet(auth.info.profile.pkey, alchemy);
+        const tx = await wallet.sendTransaction(txPOT);
+        await tx.wait();
+        setContractLoading(false);
+        return { res: "success" };
+      }
     } catch (err) {
       console.log("err", err);
       setContractLoading(false);

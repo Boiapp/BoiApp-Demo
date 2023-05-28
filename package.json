@@ -5,7 +5,7 @@
   "scripts": {
     "dapp": "yarn workspace mobile-app start",
     "app:update": "yarn workspace mobile-app update",
-    "app:publish": "cd mobile-app && expo publish",
+    "app:publish": "cd mobile-app && expo-cli publish",
     "app:build-ios": "cd mobile-app && expo build:ios",
     "app:build-android": "cd mobile-app && expo build:android",
     "app:push": "cd mobile-app && expo push:android:upload  --api-key",

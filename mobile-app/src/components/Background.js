@@ -5,10 +5,12 @@ export default function Background(props) {
   const { width, height } = useWindowDimensions();
   return (
     <ImageBackground
-      style={[styles.imgBackground, { width, height }]}
+      style={[
+        styles.imgBackground,
+        { width, height, backgroundColor: "#0069ff" },
+      ]}
       resizeMode="cover"
       source={require("../../assets/images/background02.png")}
-      className="bg-[#0069ff]"
     >
       {props.children}
     </ImageBackground>

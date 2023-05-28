@@ -179,12 +179,10 @@ export default function RideList(props) {
                   { textAlign: isRTL ? "right" : "left" },
                 ]}
               >
-                {item.status == "PAID" || item.status == "COMPLETE"
-                  ? item.customer_paid
-                    ? parseFloat(item.customer_paid).toFixed(settings.decimal) +
-                      settings.symbol
-                    : parseFloat(item.estimate).toFixed(settings.decimal) +
-                      settings.symbol
+                {item.status == "PAID" ||
+                (item.status == "COMPLETE" && item.estimate)
+                  ? parseFloat(item.estimate).toFixed(settings.decimal) +
+                    settings.symbol
                   : null}
               </Text>
             )}

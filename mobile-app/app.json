@@ -1,4 +1,7 @@
 {
-    "name": "boiapp",
-    "displayName": "boiapp"
+  "name": "boiapp",
+  "displayName": "boiapp",
+  "expo": {
+    "scheme": "boiapp"
   }
+}

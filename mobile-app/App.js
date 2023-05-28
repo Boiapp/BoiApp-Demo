@@ -22,6 +22,7 @@ import { FirebaseConfig } from "./config/FirebaseConfig";
 import { colors } from "./src/common/theme";
 import WalletConnectProvider from "@walletconnect/react-native-dapp";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { RootSiblingParent } from "react-native-root-siblings";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -130,21 +131,23 @@ export default function App() {
   }
 
   return (
-    <WalletConnectProvider {...walletConnectOptions}>
-      <Provider store={store}>
-        <FirebaseProvider
-          config={FirebaseConfig}
-          appcat={AppCat}
-          AsyncStorage={AsyncStorage}
-        >
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <AppCommon>
-              <AppContainer />
-            </AppCommon>
-          </GestureHandlerRootView>
-        </FirebaseProvider>
-      </Provider>
-    </WalletConnectProvider>
+    <RootSiblingParent>
+      <WalletConnectProvider {...walletConnectOptions}>
+        <Provider store={store}>
+          <FirebaseProvider
+            config={FirebaseConfig}
+            appcat={AppCat}
+            AsyncStorage={AsyncStorage}
+          >
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <AppCommon>
+                <AppContainer />
+              </AppCommon>
+            </GestureHandlerRootView>
+          </FirebaseProvider>
+        </Provider>
+      </WalletConnectProvider>
+    </RootSiblingParent>
   );
 }
 /* </WalletConnectProvider> */

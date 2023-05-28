@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useRef, useContext } from "react";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useContext,
+  useCallback,
+} from "react";
 import {
   StyleSheet,
   View,
@@ -23,7 +29,7 @@ import { FirebaseContext } from "common/src";
 import { OptionModal } from "../components/OptionModal";
 import BookingModal from "../components/BookingModal";
 import MapView, { PROVIDER_GOOGLE, Marker } from "react-native-maps";
-import { DrawerActions } from "@react-navigation/native";
+import { DrawerActions, useIsFocused } from "@react-navigation/native";
 import { mapStyle } from "../../config/mapStyle";
 import { useWalletConnect } from "@walletconnect/react-native-dapp";
 import "react-native-get-random-values";
@@ -32,6 +38,8 @@ import { ethers, utils } from "ethers";
 import POT from "../../artifacts/contracts/POT.sol/POT.json";
 import Token from "../../artifacts/contracts/BOI.sol/Boi.json";
 import { API_KEY } from "@env";
+import { ConnectionMode } from "../types/types";
+import useInterval from "../hooks/useInterval";
 
 const hasNotch =
   Platform.OS === "ios" &&
@@ -82,6 +90,9 @@ export default function MapScreen(props) {
   const activeBookings = useSelector((state) => state.bookinglistdata.active);
   const gps = useSelector((state) => state.gpsdata);
   const web3 = useSelector((state) => state.web3data);
+  const connectionMode = auth.info.connectionMode;
+  const passenger = auth.info.profile.wallet;
+  const isFocused = useIsFocused();
 
   /* Web3 */
   const connector = useWalletConnect();
@@ -92,7 +103,10 @@ export default function MapScreen(props) {
 
   const createNewContract = async () => {
     setContractLoading(true);
-    if (connector.chainId !== 80001) {
+    if (
+      connectionMode === ConnectionMode.WALLETCONNECT &&
+      connector.chainId !== 80001
+    ) {
       try {
         await connector.sendCustomRequest({
           method: "wallet_switchEthereumChain",
@@ -114,19 +128,23 @@ export default function MapScreen(props) {
           console.log("err", err);
         }
       }
-    }
-    const passenger = connector.accounts[0];
-    const value = Number(estimatedata.estimate.fareCost);
-    let res = await dispatch(createNewPOT(passenger, value));
+      const value = Number(estimatedata.estimate.fareCost);
+      let res = await dispatch(createNewPOT(passenger, value));
 
-    addressNewPOT = res.addressNewContract;
-    return res.addressNewContract;
+      addressNewPOT = res.addressNewContract;
+      return res.addressNewContract;
+    } else if (connectionMode === ConnectionMode.WEB3AUTH) {
+      const value = Number(estimatedata.estimate.fareCost);
+      let res = await dispatch(createNewPOT(passenger, value));
+
+      addressNewPOT = res.addressNewContract;
+      return res.addressNewContract;
+    }
   };
 
   // Approve token
   const approveContract = async (addressPOT) => {
-    let alchemy = new ethers.providers.AlchemyProvider("maticmum", API_KEY);
-    const passenger = connector.accounts[0];
+    const alchemy = new ethers.providers.AlchemyProvider("maticmum", API_KEY);
     const ifaceToken = new ethers.utils.Interface(Token.abi);
     const noncePassenger = await alchemy.getTransactionCount(passenger);
     const gasPrice = await alchemy.getGasPrice();
@@ -146,17 +164,26 @@ export default function MapScreen(props) {
     };
 
     try {
-      await connector.sendTransaction(txApprove).then(async (res) => {
-        await alchemy
-          .waitForTransaction(res, 1)
-          .then((res) => {
-            return { res: "success" };
-          })
-          .catch((err) => {
-            console.log("err", err);
-          });
-      });
+      if (connectionMode === ConnectionMode.WALLETCONNECT) {
+        await connector.sendTransaction(txApprove).then(async (res) => {
+          await alchemy
+            .waitForTransaction(res, 1)
+            .then((res) => {
+              return { res: "success" };
+            })
+            .catch((err) => {
+              console.log("err", err);
+            });
+        });
+      } else if (connectionMode === ConnectionMode.WEB3AUTH) {
+        const wallet = new ethers.Wallet(auth.info.profile.pkey, alchemy);
+        const tx = await wallet.sendTransaction(txApprove);
+        await tx.wait();
+        console.log("tx", tx);
+        return { res: "success" };
+      }
     } catch (err) {
+      console.log("err", err);
       return { err };
     }
   };
@@ -164,7 +191,6 @@ export default function MapScreen(props) {
   // Payment
   const paymentByPassenger = async (addressPOT) => {
     let alchemy = new ethers.providers.AlchemyProvider("maticmum", API_KEY);
-    const passenger = connector.accounts[0];
     const ifacePOT = new ethers.utils.Interface(POT.abi);
     const noncePassenger = await alchemy.getTransactionCount(passenger);
     const gasPrice = await alchemy.getGasPrice();
@@ -183,17 +209,26 @@ export default function MapScreen(props) {
     };
 
     try {
-      await connector.sendTransaction(txPaymentPOT).then(async (res) => {
-        await alchemy
-          .waitForTransaction(res, 1)
-          .then((res) => {
-            return { res: "success", res };
-          })
-          .catch((err) => {
-            console.log("err", err);
-          });
+      if (connectionMode === ConnectionMode.WALLETCONNECT) {
+        await connector.sendTransaction(txPaymentPOT).then(async (res) => {
+          await alchemy
+            .waitForTransaction(res, 1)
+            .then((res) => {
+              return { res: "success" };
+            })
+            .catch((err) => {
+              console.log("err", err);
+            });
+          setContractLoading(false);
+        });
+      } else if (connectionMode === ConnectionMode.WEB3AUTH) {
+        const wallet = new ethers.Wallet(auth.info.profile.pkey, alchemy);
+        const tx = await wallet.sendTransaction(txPaymentPOT);
+        await tx.wait();
+        console.log("tx", tx);
         setContractLoading(false);
-      });
+        return { res: "success" };
+      }
     } catch (err) {
       setContractLoading(false);
       return { err };
@@ -238,6 +273,7 @@ export default function MapScreen(props) {
   const mapRef = useRef();
   const [dragging, setDragging] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [lastApiCallTime, setLastApiCallTime] = useState(null);
 
   const animation = useRef(new Animated.Value(4)).current;
   const [isEditing, setIsEditing] = useState(false);
@@ -289,15 +325,25 @@ export default function MapScreen(props) {
     }
   }, [cars]);
 
-  useEffect(() => {
-    if (tripdata.pickup && drivers) {
+  const callGetDrivers = useCallback(() => {
+    if (pageActive.current && tripdata.pickup && drivers && isFocused) {
       getDrivers();
+      setLastApiCallTime(new Date().getTime());
+    }
+  }, [tripdata.pickup, drivers, pageActive.current, isFocused]);
+
+  useInterval(callGetDrivers, 60000);
+
+  useEffect(() => {
+    if (tripdata.pickup && drivers && !lastApiCallTime && isFocused) {
+      callGetDrivers();
     }
     if (tripdata.pickup && !drivers) {
       resetCars();
       setFreeCars([]);
+      setLastApiCallTime(null);
     }
-  }, [drivers, tripdata.pickup]);
+  }, [drivers, tripdata.pickup, lastApiCallTime, isFocused]);
 
   useEffect(() => {
     if (estimatedata.estimate) {
@@ -580,32 +626,40 @@ export default function MapScreen(props) {
             driverDest = driverDest + "|";
           }
         }
-        distArr = await getDistanceMatrix(startLoc, driverDest);
+        distArr = await getDistanceMatrix(startLoc, driverDest)
+          .then((res) => {
+            return res;
+          })
+          .catch((err) => {
+            return [];
+          });
 
-        for (let i = 0; i < sortedDrivers.length; i++) {
-          let driver = { ...sortedDrivers[i] };
-          if (distArr[i].found) {
-            driver.arriveTime = distArr[i];
-            for (let i = 0; i < cars.length; i++) {
-              if (cars[i].name == driver.carType) {
-                driver.carImage = cars[i].image;
+        if (distArr.length > 0) {
+          for (let i = 0; i < sortedDrivers.length; i++) {
+            let driver = { ...sortedDrivers[i] };
+            if (distArr[i].found) {
+              driver.arriveTime = distArr[i];
+              for (let i = 0; i < cars.length; i++) {
+                if (cars[i].name == driver.carType) {
+                  driver.carImage = cars[i].image;
+                }
               }
-            }
-            let carType = driver.carType;
-            if (arr[carType] && arr[carType].sortedDrivers) {
-              arr[carType].sortedDrivers.push(driver);
-              if (arr[carType].minDistance > driver.distance) {
+              let carType = driver.carType;
+              if (arr[carType] && arr[carType].sortedDrivers) {
+                arr[carType].sortedDrivers.push(driver);
+                if (arr[carType].minDistance > driver.distance) {
+                  arr[carType].minDistance = driver.distance;
+                  arr[carType].minTime = driver.arriveTime.timein_text;
+                }
+              } else {
+                arr[carType] = {};
+                arr[carType].sortedDrivers = [];
+                arr[carType].sortedDrivers.push(driver);
                 arr[carType].minDistance = driver.distance;
                 arr[carType].minTime = driver.arriveTime.timein_text;
               }
-            } else {
-              arr[carType] = {};
-              arr[carType].sortedDrivers = [];
-              arr[carType].sortedDrivers.push(driver);
-              arr[carType].minDistance = driver.distance;
-              arr[carType].minTime = driver.arriveTime.timein_text;
+              availableDrivers.push(driver);
             }
-            availableDrivers.push(driver);
           }
         }
       }
@@ -688,8 +742,8 @@ export default function MapScreen(props) {
     setCheckType(true);
     setBookLoading(true);
     if (
-      /* !(profile.mobile && profile.mobile.length > 6) || */
-      !connector.connected ||
+      !auth.info.connectionMode === ConnectionMode.WEB3AUTH ||
+      !auth.info.connectionMode === ConnectionMode.WALLETCONNECT ||
       profile.email == " " ||
       profile.firstName == " " ||
       profile.lastName == " "
@@ -797,7 +851,8 @@ export default function MapScreen(props) {
     setCheckType(false);
     if (
       /* !(profile.mobile && profile.mobile.length > 6)  */
-      !connector.connected ||
+      !auth.info.connectionMode === ConnectionMode.WEB3AUTH ||
+      !auth.info.connectionMode === ConnectionMode.WALLETCONNECT ||
       profile.email == " " ||
       profile.firstName == " " ||
       profile.lastName == " "
@@ -1018,8 +1073,9 @@ export default function MapScreen(props) {
         Alert.alert(t("alert"), t("deliveryDetailMissing"));
       }
     } else {
-      let AddressNewPOT = await createNewContract();
-      let resApprove = await approveContract(AddressNewPOT);
+      const AddressNewPOT = await createNewContract();
+      console.log("AddressNewPOT", AddressNewPOT);
+      const resApprove = await approveContract(AddressNewPOT);
       if (resApprove?.err !== undefined) {
         return;
       }

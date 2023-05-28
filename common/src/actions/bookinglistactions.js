@@ -170,195 +170,225 @@ export const updateBooking = (booking) => (dispatch) => async (firebase) => {
     const driverProfile = await onValue(
       singleUserRef(booking.driver),
       (snapshot) => {
-        return snapshot.val();
-      },
-      {
-        onlyOnce: true,
-      }
-    );
-    const driverLocation = driverProfile.val().location;
+        const profile = snapshot.val();
+        const driverLocation = profile.location;
+        push(trackingRef(booking.id), {
+          at: new Date().getTime(),
+          status: "REACHED",
+          lat: driverLocation.lat,
+          lng: driverLocation.lng,
+        });
 
-    push(trackingRef(booking.id), {
-      at: new Date().getTime(),
-      status: "REACHED",
-      lat: driverLocation.lat,
-      lng: driverLocation.lng,
-    });
+        let address = booking.drop.add;
 
-    let address = booking.drop.add;
+        if (appcat == "taxi") {
+          let latlng = driverLocation.lat + "," + driverLocation.lng;
+          fetchAddressfromCoords(latlng)(firebase)
+            .then((addressFromCoords) => {
+              address = addressFromCoords;
+              return addressFromCoords;
+            })
+            .catch((error) => {
+              console.error("Error fetching address from coordinates:", error);
+            });
+        }
 
-    if (appcat == "taxi") {
-      let latlng = driverLocation.lat + "," + driverLocation.lng;
-      address = await fetchAddressfromCoords(latlng)(firebase);
-    }
+        onValue(
+          child(singleUserRef(booking.customer), "savedAddresses"),
+          (savedAdd) => {
+            if (savedAdd.val()) {
+              let addresses = savedAdd.val();
+              let didNotMatch = true;
+              for (let key in addresses) {
+                let entry = addresses[key];
+                if (
+                  GetDistance(
+                    entry.lat,
+                    entry.lng,
+                    appcat == "taxi" ? driverLocation.lat : booking.drop.lat,
+                    appcat == "taxi" ? driverLocation.lng : booking.drop.lng
+                  ) < 0.1
+                ) {
+                  didNotMatch = false;
+                  let count = entry.count ? entry.count + 1 : 1;
+                  update(
+                    child(
+                      singleUserRef(booking.customer),
+                      "savedAddresses/" + key
+                    ),
+                    { count: count }
+                  );
+                  break;
+                }
+              }
+              if (didNotMatch) {
+                update(
+                  child(singleUserRef(booking.customer), "savedAddresses"),
+                  {
+                    description: address,
+                    lat:
+                      appcat == "taxi" ? driverLocation.lat : booking.drop.lat,
+                    lng:
+                      appcat == "taxi" ? driverLocation.lng : booking.drop.lng,
+                    count: 1,
+                  }
+                );
+              }
+            } else {
+              update(child(singleUserRef(booking.customer), "savedAddresses"), {
+                description: address,
+                lat: appcat == "taxi" ? driverLocation.lat : booking.drop.lat,
+                lng: appcat == "taxi" ? driverLocation.lng : booking.drop.lng,
+                count: 1,
+              });
+            }
+          },
+          {
+            onlyOnce: true,
+          }
+        );
+        const end_time = new Date();
+        const diff =
+          (end_time.getTime() - parseFloat(booking.startTime)) / 1000;
+        const totalTimeTaken = Math.abs(Math.round(diff));
+        booking.trip_end_time =
+          end_time.getHours() +
+          ":" +
+          end_time.getMinutes() +
+          ":" +
+          end_time.getSeconds();
+        booking.endTime = end_time.getTime();
+        booking.total_trip_time = totalTimeTaken;
 
-    onValue(
-      child(singleUserRef(booking.customer), "savedAddresses"),
-      (savedAdd) => {
-        if (savedAdd.val()) {
-          let addresses = savedAdd.val();
-          let didNotMatch = true;
-          for (let key in addresses) {
-            let entry = addresses[key];
-            if (
-              GetDistance(
-                entry.lat,
-                entry.lng,
-                appcat == "taxi" ? driverLocation.lat : booking.drop.lat,
-                appcat == "taxi" ? driverLocation.lng : booking.drop.lng
-              ) < 0.1
-            ) {
-              didNotMatch = false;
-              let count = entry.count ? entry.count + 1 : 1;
-              update(
-                child(singleUserRef(booking.customer), "savedAddresses/" + key),
-                { count: count }
-              );
-              break;
+        if (appcat == "taxi") {
+          let cars = store.getState().cartypes.cars;
+          let rates = {};
+          for (var i = 0; i < cars.length; i++) {
+            if (cars[i].name == booking.carType) {
+              rates = cars[i];
             }
           }
-          if (didNotMatch) {
-            update(child(singleUserRef(booking.customer), "savedAddresses"), {
-              description: address,
-              lat: appcat == "taxi" ? driverLocation.lat : booking.drop.lat,
-              lng: appcat == "taxi" ? driverLocation.lng : booking.drop.lng,
-              count: 1,
-            });
-          }
-        } else {
-          update(child(singleUserRef(booking.customer), "savedAddresses"), {
-            description: address,
-            lat: appcat == "taxi" ? driverLocation.lat : booking.drop.lat,
-            lng: appcat == "taxi" ? driverLocation.lng : booking.drop.lng,
-            count: 1,
-          });
+          onValue(
+            query(trackingRef(booking.id), orderByKey()),
+            (snapshot) => {
+              const trackingVal = snapshot.val();
+              GetTripDistance(trackingVal)(firebase).then((res) => {
+                onValue(
+                  settingsRef,
+                  (snapshot) => {
+                    const settings = snapshot.val();
+                    const distance = settings.convert_to_mile
+                      ? res.distance / 1.609344
+                      : res.distance;
+                    const { grandTotal, convenience_fees } = FareCalculator(
+                      distance,
+                      totalTimeTaken,
+                      rates,
+                      null,
+                      settings.decimal
+                    );
+                    booking.drop = {
+                      add: address,
+                      lat: driverLocation.lat,
+                      lng: driverLocation.lng,
+                    };
+                    booking.dropAddress = address;
+                    booking.trip_cost = grandTotal;
+                    booking.distance = parseFloat(distance).toFixed(
+                      settings.decimal
+                    );
+                    booking.convenience_fees = convenience_fees;
+                    booking.driver_share = (
+                      grandTotal - convenience_fees
+                    ).toFixed(settings.decimal);
+                    booking.coords = res.coords;
+                    return booking;
+                  },
+                  {
+                    onlyOnce: true,
+                  }
+                );
+                update(singleBookingRef(booking.id), booking);
+                return booking;
+              });
+            },
+            {
+              onlyOnce: true,
+            }
+          );
         }
+
+        RequestPushMsg(booking.customer_token, {
+          title:
+            store.getState().languagedata.defaultLanguage.notification_title,
+          msg: store.getState().languagedata.defaultLanguage
+            .driver_completed_ride,
+          screen: "BookedCab",
+          params: { bookingId: booking.id },
+        })(firebase);
       },
       {
         onlyOnce: true,
       }
     );
-
-    const end_time = new Date();
-    const diff = (end_time.getTime() - parseFloat(booking.startTime)) / 1000;
-    const totalTimeTaken = Math.abs(Math.round(diff));
-    booking.trip_end_time =
-      end_time.getHours() +
-      ":" +
-      end_time.getMinutes() +
-      ":" +
-      end_time.getSeconds();
-    booking.endTime = end_time.getTime();
-    booking.total_trip_time = totalTimeTaken;
-
-    if (appcat == "taxi") {
-      let cars = store.getState().cartypes.cars;
-      let rates = {};
-      for (var i = 0; i < cars.length; i++) {
-        if (cars[i].name == booking.carType) {
-          rates = cars[i];
-        }
-      }
-      const trackingSnap = await onValue(
-        query(trackingRef(booking.id), orderByKey()),
-        (snapshot) => {
-          return snapshot;
-        },
-        {
-          onlyOnce: true,
-        }
-      );
-      const trackingVal = trackingSnap.val();
-      const res = await GetTripDistance(trackingVal)(firebase);
-      const settingsdata = await onValue(
-        settingsRef,
-        (snapshot) => {
-          return snapshot;
-        },
-        {
-          onlyOnce: true,
-        }
-      );
-      const settings = settingsdata.val();
-      const distance = settings.convert_to_mile
-        ? res.distance / 1.609344
-        : res.distance;
-      const { grandTotal, convenience_fees } = FareCalculator(
-        distance,
-        totalTimeTaken,
-        rates,
-        null,
-        settings.decimal
-      );
-      booking.drop = {
-        add: address,
-        lat: driverLocation.lat,
-        lng: driverLocation.lng,
-      };
-      booking.dropAddress = address;
-      booking.trip_cost = grandTotal;
-      booking.distance = parseFloat(distance).toFixed(settings.decimal);
-      booking.convenience_fees = convenience_fees;
-      booking.driver_share = (grandTotal - convenience_fees).toFixed(
-        settings.decimal
-      );
-      booking.coords = res.coords;
-    }
-    update(singleBookingRef(booking.id), booking);
-    RequestPushMsg(booking.customer_token, {
-      title: store.getState().languagedata.defaultLanguage.notification_title,
-      msg: store.getState().languagedata.defaultLanguage.driver_completed_ride,
-      screen: "BookedCab",
-      params: { bookingId: booking.id },
-    })(firebase);
   }
   if (booking.status == "PENDING") {
     update(singleBookingRef(booking.id), booking);
     update(singleUserRef(booking.driver), { queue: false });
   }
   if (booking.status == "PAID") {
-    const settingsdata = await settingsRef.once("value");
-    const settings = settingsdata.val();
-    update(singleBookingRef(booking.id), booking);
-    if (
-      booking.driver == auth.currentUser.uid &&
-      (booking.prepaid ||
-        booking.payment_mode == "cash" ||
-        booking.payment_mode == "wallet")
-    ) {
-      update(singleUserRef(booking.driver), { queue: false });
-    }
-
-    onValue(
-      singleUserRef(booking.driver),
+    await onValue(
+      settingsRef,
       (snapshot) => {
-        let walletBalance = parseFloat(snapshot.val().walletBalance);
-        walletBalance = walletBalance + parseFloat(booking.driver_share);
-        if (parseFloat(booking.cashPaymentAmount) > 0) {
-          walletBalance = walletBalance - parseFloat(booking.cashPaymentAmount);
+        const settings = snapshot.val();
+        update(singleBookingRef(booking.id), booking);
+        if (
+          booking.driver == auth.currentUser.uid &&
+          (booking.prepaid ||
+            booking.payment_mode == "cash" ||
+            booking.payment_mode == "wallet")
+        ) {
+          update(singleUserRef(booking.driver), { queue: false });
         }
-        set(
-          walletBalRef(booking.driver),
-          parseFloat(walletBalance.toFixed(settings.decimal))
+        onValue(
+          singleUserRef(booking.driver),
+          (snapshot) => {
+            let walletBalance = parseFloat(snapshot.val().walletBalance);
+            walletBalance = walletBalance + parseFloat(booking.driver_share);
+            if (parseFloat(booking.cashPaymentAmount) > 0) {
+              walletBalance =
+                walletBalance - parseFloat(booking.cashPaymentAmount);
+            }
+            set(
+              walletBalRef(booking.driver),
+              parseFloat(walletBalance.toFixed(settings.decimal))
+            );
+
+            let details = {
+              type: "Credit",
+              amount: parseFloat(booking.driver_share).toFixed(
+                settings.decimal
+              ),
+              date: new Date().toString(),
+              txRef: booking.id,
+            };
+            push(walletHistoryRef(booking.driver), details);
+
+            if (parseFloat(booking.cashPaymentAmount) > 0) {
+              let details = {
+                type: "Debit",
+                amount: booking.cashPaymentAmount,
+                date: new Date().toString(),
+                txRef: booking.id,
+              };
+              push(walletHistoryRef(booking.driver), details);
+            }
+          },
+          {
+            onlyOnce: true,
+          }
         );
-
-        let details = {
-          type: "Credit",
-          amount: parseFloat(booking.driver_share).toFixed(settings.decimal),
-          date: new Date().toString(),
-          txRef: booking.id,
-        };
-        push(walletHistoryRef(booking.driver), details);
-
-        if (parseFloat(booking.cashPaymentAmount) > 0) {
-          let details = {
-            type: "Debit",
-            amount: booking.cashPaymentAmount,
-            date: new Date().toString(),
-            txRef: booking.id,
-          };
-          push(walletHistoryRef(booking.driver), details);
-        }
+        return snapshot;
       },
       {
         onlyOnce: true,

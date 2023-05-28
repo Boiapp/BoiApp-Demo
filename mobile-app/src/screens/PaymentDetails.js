@@ -49,9 +49,7 @@ export default function PaymentDetails(props) {
     usedWalletMoney: booking.usedWalletMoney ? booking.usedWalletMoney : 0,
     promo_applied: booking.promo_applied ? booking.promo_applied : false,
     promo_details: booking.promo_details ? booking.promo_details : null,
-    payableAmount: booking.payableAmount
-      ? booking.payableAmount
-      : booking.trip_cost,
+    payableAmount: booking.estimate ? booking.estimate : booking.trip_cost,
   });
 
   const useWallet = () => {
@@ -156,6 +154,7 @@ export default function PaymentDetails(props) {
   const doPayment = (payment_mode) => {
     if (payment_mode == "cash" || payment_mode == "wallet") {
       let curBooking = { ...booking };
+      console.log("booking");
       if (booking.status == "PAYMENT_PENDING") {
         curBooking.status = "NEW";
       } else {

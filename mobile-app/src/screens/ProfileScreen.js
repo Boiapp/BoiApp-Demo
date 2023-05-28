@@ -193,6 +193,7 @@ export default function ProfileScreen(props) {
       ? dispatch(updateProfile(auth.info, { driverActiveStatus: false }))
       : null;
     dispatch(signOut());
+    props.navigation.navigate("Login");
   };
 
   //Delete current user
@@ -209,9 +210,9 @@ export default function ProfileScreen(props) {
         {
           text: t("yes"),
           onPress: () => {
+            console.log("delete user", auth.info.uid);
             dispatch(deleteUser(auth.info.uid));
             dispatch(signOut());
-            props.navigation.navigate("Login");
           },
         },
       ],

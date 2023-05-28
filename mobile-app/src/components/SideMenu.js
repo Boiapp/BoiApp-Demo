@@ -1,26 +1,26 @@
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import { useWalletConnect } from "@walletconnect/react-native-dapp";
+import { FirebaseContext } from "common/src";
+import i18n from "i18n-js";
+import React, { useCallback, useContext, useState } from "react";
 import {
-  Text,
-  View,
+  ActivityIndicator,
+  Alert,
   Dimensions,
-  StyleSheet,
   FlatList,
   Image,
-  TouchableOpacity,
-  Alert,
   Linking,
-  Share,
   Platform,
-  ActivityIndicator,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { Icon } from "react-native-elements";
-import SideMenuHeader from "./SideMenuHeader";
+import { useDispatch, useSelector } from "react-redux";
 import { colors } from "../common/theme";
+import SideMenuHeader from "./SideMenuHeader";
 var { width } = Dimensions.get("window");
-import { useSelector, useDispatch } from "react-redux";
-import i18n from "i18n-js";
-import { FirebaseContext } from "common/src";
-import { useWalletConnect } from "@walletconnect/react-native-dapp";
 
 const ETHERSCAN_API_KEY = "G2A97FS9BAN2XE2PG57T72XATVVGGJK8CD";
 
@@ -56,13 +56,6 @@ export default function SideMenu(props) {
   );
 
   const connector = useWalletConnect();
-
-  // useEffect(() => {
-  //   if (session) {
-  //     const account = session.accounts[0]; // Using just the first account for the sake of this PoC's simplicity
-  //     // fetchEthBalance(account);
-  //   }
-  // }, [session]);
 
   const sideMenuList = [
     {
@@ -197,7 +190,7 @@ export default function SideMenu(props) {
       : null;
 
   return (
-    <View style={styles.mainViewStyle} /* className="rounded-r-xl" */>
+    <View style={styles.mainViewStyle}>
       {auth.info && auth.info.profile ? (
         <SideMenuHeader
           headerStyle={styles.myHeader}
@@ -210,20 +203,17 @@ export default function SideMenu(props) {
           props={props}
         ></SideMenuHeader>
       ) : null}
-      <View
-        // className="bg-[#0069ff] flex-row justify-around rounded-b-xl"
-        style={styles.balanceView}
-      >
+      <View style={styles.balanceView}>
         {isLoadingEthBalance && <ActivityIndicator size="small" />}
         <View
-          /* className="flex-row justify-center align-middle" */ style={{
+          style={{
             flexDirection: "row",
             justifyContent: "center",
             alignItems: "center",
           }}
         >
           <Text
-            /* className="text-white align-middle text-xl py-2 px-1 font-bold my-auto" */ style={{
+            style={{
               color: "white",
               alignItems: "center",
               fontSize: 20,
@@ -245,14 +235,14 @@ export default function SideMenu(props) {
           />
         </View>
         <View
-          /* className="flex-row justify-center align-middle" */ style={{
+          style={{
             flexDirection: "row",
             justifyContent: "center",
             alignItems: "center",
           }}
         >
           <Text
-            /* className="text-white align-middle text-xl py-2 font-bold my-auto" */ style={{
+            style={{
               color: "white",
               alignItems: "center",
               fontSize: 20,
@@ -266,7 +256,6 @@ export default function SideMenu(props) {
           </Text>
           <Image
             source={require("../../assets/images/polygon-matic.png")}
-            // className="w-12 h-12 align-middle my-auto "
             style={{
               width: 12,
               height: 12,
@@ -277,7 +266,6 @@ export default function SideMenu(props) {
         </View>
       </View>
       <View style={styles.compViewStyle}>
-        {/* <View style={[styles.vertialLine, { height: (width <= 320) ? width / 1.32 : width / 1.40, left: isRTL? 231 : 22 }]}></View> */}
         {!!settings && auth.info && auth.info.profile ? (
           <FlatList
             data={sideMenuList}
@@ -334,10 +322,9 @@ export default function SideMenu(props) {
                       {
                         marginTop: index == sideMenuList.length - 1 ? 100 : 0,
                         flexDirection: isRTL ? "row-reverse" : "row",
-                        marginHorizontal: "auto",
+                        marginHorizontal: 20,
                       },
                     ]}
-                    // className="mx-auto"
                   >
                     <View style={styles.viewIcon}>
                       <Icon
@@ -393,10 +380,9 @@ export default function SideMenu(props) {
                       {
                         marginTop: index == sideMenuList.length - 1 ? 100 : 0,
                         flexDirection: isRTL ? "row-reverse" : "row",
-                        marginHorizontal: "auto",
+                        marginHorizontal: 20,
                       },
                     ]}
-                    // className="mx-auto"
                   >
                     <View style={styles.viewIcon}>
                       <Icon
@@ -408,9 +394,6 @@ export default function SideMenu(props) {
                       />
                     </View>
                     <Text style={styles.menuName}>{item.name}</Text>
-                    {/* <View
-                      style={[styles.vertialLine, { height: 20, top: 24 }]}
-                    ></View> */}
                   </TouchableOpacity>
                 );
               } else if (
@@ -450,10 +433,9 @@ export default function SideMenu(props) {
                       {
                         marginTop: index == sideMenuList.length - 1 ? 100 : 0,
                         flexDirection: isRTL ? "row-reverse" : "row",
-                        marginHorizontal: "auto",
+                        marginHorizontal: 20,
                       },
                     ]}
-                    // className="mx-auto"
                   >
                     <View style={styles.viewIcon}>
                       <Icon
@@ -465,9 +447,6 @@ export default function SideMenu(props) {
                       />
                     </View>
                     <Text style={styles.menuName}>{item.name}</Text>
-                    {/* <View
-                      style={[styles.vertialLine, { height: 20, top: 24 }]}
-                    ></View> */}
                   </TouchableOpacity>
                 );
               } else {
@@ -482,12 +461,10 @@ export default function SideMenu(props) {
                       styles.menuItemView,
                       {
                         marginTop: index == sideMenuList.length - 1 ? 100 : 0,
-                        // bottom: index == sideMenuList.length - 1 ? -50 : 0,
                         flexDirection: isRTL ? "row-reverse" : "row",
-                        marginHorizontal: "auto",
+                        marginHorizontal: 20,
                       },
                     ]}
-                    // className="mx-auto"
                   >
                     <View style={styles.viewIcon}>
                       <Icon
@@ -499,16 +476,6 @@ export default function SideMenu(props) {
                       />
                     </View>
                     <Text style={styles.menuName}>{item.name}</Text>
-
-                    {/* {item.icon == "sign-out" ? (
-                      <View
-                        style={[styles.vertialLine, { height: 0, top: 0 }]}
-                      ></View>
-                    ) : (
-                      <View
-                        style={[styles.vertialLine, { height: 20, top: 24 }]}
-                      ></View>
-                    )} */}
                   </TouchableOpacity>
                 );
               }
@@ -516,12 +483,6 @@ export default function SideMenu(props) {
           />
         ) : null}
       </View>
-      {/* <View style={{ alignItems: "center", marginBottom: 30 }}>
-        <Image
-          source={require("../../assets/images/logo165x90white.png")}
-          style={{ width: "60%" }}
-        />
-      </View> */}
     </View>
   );
 }

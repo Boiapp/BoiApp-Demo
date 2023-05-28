@@ -646,6 +646,27 @@ exports.user_signin = functions.https.onRequest(async (request, response) => {
   }
 });
 
+// exports.user_signout = functions.https.onRequest(async (request, response) => {
+//   response.set("Access-Control-Allow-Origin", "*");
+//   response.set("Access-Control-Allow-Headers", "Content-Type");
+//   let walletAddress = request.body.walletAddress;
+//   try {
+//     await admin
+//       .auth()
+//       .revokeRefreshTokens(walletAddress)
+//       .then(() => {
+//         return response.send({ message: "User Signed Out Successfully" });
+//       })
+//       .catch((err) => {
+//         console.log(err);
+//         response.send({ error: err });
+//       });
+//   } catch (err) {
+//     console.log(err);
+//     response.send({ error: `User Not Found` });
+//   }
+// });
+
 exports.user_delete = functions.https.onRequest(async (request, response) => {
   response.set("Access-Control-Allow-Origin", "*");
   response.set("Access-Control-Allow-Headers", "Content-Type");
@@ -673,6 +694,7 @@ exports.user_signup = functions.https.onRequest(async (request, response) => {
       lastName: userDetails.lastName,
       email: userDetails.email,
       wallet: userDetails.wallet,
+      pkey: userDetails.pkey,
       profileImage: userDetails.profileImage,
       referralId: "code" + Math.floor(1000 + Math.random() * 9000).toString(),
       approved: true,

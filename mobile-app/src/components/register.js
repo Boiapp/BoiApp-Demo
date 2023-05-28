@@ -23,7 +23,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSelector } from "react-redux";
 import ActionSheet from "react-native-actions-sheet";
 import { FirebaseContext } from "common/src";
-import { useWalletConnect } from "@walletconnect/react-native-dapp";
 
 export default function Registration(props) {
   const { t } = i18n;
@@ -48,6 +47,7 @@ export default function Registration(props) {
     bankName: "",
     licenseImage: null,
     other_info: "",
+    pkey: "",
   });
 
   const [role, setRole] = useState(0);

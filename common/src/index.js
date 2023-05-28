@@ -1,6 +1,6 @@
 import React, { createContext } from "react";
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getStorage } from "firebase/storage";
+import { getStorage, ref as refStorage } from "firebase/storage";
 import {
   getAuth,
   getReactNativePersistence,
@@ -164,11 +164,11 @@ const FirebaseProvider = ({ config, appcat, children, AsyncStorage }) => {
     notifyRef: ref(database, "notifications/"),
     notifyEditRef: (id) => ref(database, "notifications/" + id),
     singleUserRef: (uid) => ref(database, "users/" + uid),
-    profileImageRef: (uid) => ref(storage, `users/${uid}/profileImage`),
+    profileImageRef: (uid) => refStorage(storage, `users/${uid}/profileImage`),
     bookingImageRef: (bookingId, imageType) =>
-      ref(storage, `bookings/${bookingId}/${imageType}`),
+      refStorage(storage, `bookings/${bookingId}/${imageType}`),
     driverDocsRef: (uid, timestamp) =>
-      ref(storage, `users/${uid}/driverDocuments/${timestamp}/`),
+      refStorage(storage, `users/${uid}/driverDocuments/${timestamp}/`),
     singleBookingRef: (bookingKey) => ref(database, "bookings/" + bookingKey),
     requestedDriversRef: (bookingKey) =>
       ref(database, "bookings/" + bookingKey + "/requestedDrivers"),
@@ -240,7 +240,8 @@ const FirebaseProvider = ({ config, appcat, children, AsyncStorage }) => {
       checkUserExists: (regData) => checkUserExists(regData)(firebase),
       walletSignIn: (id) => walletSignIn(id)(firebase),
 
-      fetchUser: (token) => (dispatch) => fetchUser(token)(dispatch)(firebase),
+      fetchUser: (token, connectionMode) => (dispatch) =>
+        fetchUser(token, connectionMode)(dispatch)(firebase),
       mobileSignIn: (verficationId, code) => (dispatch) =>
         mobileSignIn(verficationId, code)(dispatch)(firebase),
       facebookSignIn: (token) => (dispatch) =>

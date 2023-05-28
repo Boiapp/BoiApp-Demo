@@ -1,28 +1,26 @@
+import i18n from "i18n-js";
 import React from "react";
 import {
+  Button,
+  Dimensions,
+  ImageBackground,
+  Platform,
+  Pressable,
+  ScrollView,
   StyleSheet,
-  View,
   Text,
   TouchableWithoutFeedback,
-  ImageBackground,
-  ScrollView,
-  Dimensions,
-  Platform,
+  View,
 } from "react-native";
-import MapView, {
-  PROVIDER_GOOGLE,
-  Marker,
-  MapMarker,
-  Polyline,
-} from "react-native-maps";
-import { Header, Rating, Avatar, Button } from "react-native-elements";
 import Dash from "react-native-dash";
+import * as Linking from "expo-linking";
+import { Avatar, Header, Rating } from "react-native-elements";
+import { MapMarker, PROVIDER_GOOGLE, Polyline } from "react-native-maps";
 import { colors } from "../common/theme";
 var { width } = Dimensions.get("window");
-import i18n from "i18n-js";
 
-import { useSelector } from "react-redux";
 import { AnimatedMapView } from "react-native-maps/lib/MapView";
+import { useSelector } from "react-redux";
 
 export default function RideDetails(props) {
   const { data } = props.route.params;
@@ -66,6 +64,8 @@ export default function RideDetails(props) {
       goBack();
     },
   };
+
+  const chainScanURL = "https://mumbai.polygonscan.com/address/";
 
   return (
     <View style={styles.mainView}>
@@ -275,10 +275,8 @@ export default function RideDetails(props) {
                   ]}
                 >
                   {settings.symbol}
-                  {paramData && paramData.customer_paid
-                    ? parseFloat(paramData.customer_paid).toFixed(
-                        settings.decimal
-                      )
+                  {paramData && paramData.estimate
+                    ? parseFloat(paramData.estimate).toFixed(settings.decimal)
                     : paramData && paramData.estimate
                     ? paramData.estimate
                     : 0}
@@ -290,10 +288,8 @@ export default function RideDetails(props) {
                     { textAlign: isRTL ? "right" : "left" },
                   ]}
                 >
-                  {paramData && paramData.customer_paid
-                    ? parseFloat(paramData.customer_paid).toFixed(
-                        settings.decimal
-                      )
+                  {paramData && paramData.estimate
+                    ? parseFloat(paramData.estimate).toFixed(settings.decimal)
                     : paramData && paramData.estimate
                     ? paramData.estimate
                     : 0}
@@ -428,10 +424,8 @@ export default function RideDetails(props) {
                     ]}
                   >
                     {settings.symbol}{" "}
-                    {paramData && paramData.trip_cost > 0
-                      ? parseFloat(paramData.trip_cost).toFixed(
-                          settings.decimal
-                        )
+                    {paramData && paramData.estimate > 0
+                      ? parseFloat(paramData.estimate).toFixed(settings.decimal)
                       : paramData && paramData.estimate
                       ? parseFloat(paramData.estimate).toFixed(settings.decimal)
                       : 0}
@@ -443,10 +437,8 @@ export default function RideDetails(props) {
                       { textAlign: isRTL ? "right" : "left" },
                     ]}
                   >
-                    {paramData && paramData.trip_cost > 0
-                      ? parseFloat(paramData.trip_cost).toFixed(
-                          settings.decimal
-                        )
+                    {paramData && paramData.estimate > 0
+                      ? parseFloat(paramData.estimate).toFixed(settings.decimal)
                       : paramData && paramData.estimate
                       ? parseFloat(paramData.estimate).toFixed(settings.decimal)
                       : 0}{" "}
@@ -551,7 +543,7 @@ export default function RideDetails(props) {
                   </View>
                 ) : null
               ) : null}
-              {paramData && paramData.cashPaymentAmount ? (
+              {/* {paramData && paramData.cashPaymentAmount ? (
                 paramData.cashPaymentAmount > 0 ? (
                   <View
                     style={[
@@ -587,7 +579,7 @@ export default function RideDetails(props) {
                     )}
                   </View>
                 ) : null
-              ) : null}
+              ) : null} */}
               {paramData && paramData.usedWalletMoney ? (
                 paramData.usedWalletMoney > 0 ? (
                   <View
@@ -648,10 +640,8 @@ export default function RideDetails(props) {
                   ]}
                 >
                   {settings.symbol}
-                  {paramData && paramData.customer_paid
-                    ? parseFloat(paramData.customer_paid).toFixed(
-                        settings.decimal
-                      )
+                  {paramData && paramData.estimate
+                    ? parseFloat(paramData.estimate).toFixed(settings.decimal)
                     : null}
                 </Text>
               ) : (
@@ -661,10 +651,8 @@ export default function RideDetails(props) {
                     { textAlign: isRTL ? "right" : "left" },
                   ]}
                 >
-                  {paramData && paramData.customer_paid
-                    ? parseFloat(paramData.customer_paid).toFixed(
-                        settings.decimal
-                      )
+                  {paramData && paramData.estimate
+                    ? parseFloat(paramData.estimate).toFixed(settings.decimal)
                     : null}
                   {settings.symbol}
                 </Text>
@@ -726,7 +714,9 @@ export default function RideDetails(props) {
                   <View
                     style={[
                       styles.billItem,
-                      { flexDirection: isRTL ? "row-reverse" : "row" },
+                      {
+                        flexDirection: isRTL ? "row-reverse" : "row",
+                      },
                     ]}
                   >
                     <Text
@@ -746,6 +736,58 @@ export default function RideDetails(props) {
                       {paramData.payment_mode ? paramData.payment_mode : null}{" "}
                       {paramData.gateway ? "(" + paramData.gateway + ")" : null}
                     </Text>
+                  </View>
+                ) : null}
+                {["PAID", "COMPLETE"].indexOf(paramData.status) != -1 ? (
+                  <View
+                    style={[
+                      styles.billItem,
+                      {
+                        flexDirection: isRTL ? "row-reverse" : "row",
+
+                        alignItems: "center",
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.billName,
+                        { textAlign: isRTL ? "right" : "left" },
+                      ]}
+                    >
+                      Direccion de contrato
+                    </Text>
+                    <Pressable
+                      onPress={() => {
+                        Linking.openURL(
+                          chainScanURL + paramData.addressContract
+                        );
+                      }}
+                      style={{
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: 4,
+                        elevation: 3,
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        backgroundColor: colors.BLUE,
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.billAmount,
+                          {
+                            textAlign: isRTL ? "right" : "left",
+                            color: "white",
+                            textDecorationLine: "underline",
+                          },
+                        ]}
+                      >
+                        {paramData.addressContract.slice(0, 10) +
+                          "..." +
+                          paramData.addressContract.slice(-10)}
+                      </Text>
+                    </Pressable>
                   </View>
                 ) : null}
               </View>
@@ -920,7 +962,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginVertical: 15,
+    marginVertical: 10,
   },
   billName: {
     fontSize: 16,

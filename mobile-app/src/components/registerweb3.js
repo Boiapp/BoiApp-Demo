@@ -1,44 +1,45 @@
-import React, { useState, useRef, useEffect, useContext } from "react";
-import {
-  View,
-  Text,
-  Dimensions,
-  TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Image,
-  TouchableWithoutFeedback,
-  Platform,
-  Alert,
-} from "react-native";
-import Background from "./Background";
-import { Icon, Button, Header, Input } from "react-native-elements";
-import { colors } from "../common/theme";
-var { height } = Dimensions.get("window");
-import i18n from "i18n-js";
-import RadioForm from "react-native-simple-radio-button";
-import RNPickerSelect from "react-native-picker-select";
-import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { useSelector } from "react-redux";
-import ActionSheet from "react-native-actions-sheet";
-import { FirebaseContext } from "common/src";
 import { useWalletConnect } from "@walletconnect/react-native-dapp";
-import IconEntypo from "react-native-vector-icons/Entypo";
+import { FirebaseContext } from "common/src";
+import * as ImagePicker from "expo-image-picker";
+import i18n from "i18n-js";
+import React, { useContext, useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
+import ActionSheet from "react-native-actions-sheet";
+import { Button, Header, Icon, Input } from "react-native-elements";
+import RNPickerSelect from "react-native-picker-select";
+import RadioForm from "react-native-simple-radio-button";
+import { useSelector } from "react-redux";
+import { colors } from "../common/theme";
+import Background from "./Background";
+var { height } = Dimensions.get("window");
 
 export default function RegistrationWeb3(props) {
   const connector = useWalletConnect();
+  const { walletAddress, userInfo } = props;
   const { t } = i18n;
   const isRTL =
     i18n.locale.indexOf("he") === 0 || i18n.locale.indexOf("ar") === 0;
 
   const { api, appcat } = useContext(FirebaseContext);
   const { countries } = api;
+
   const [state, setState] = useState({
     usertype: "rider",
-    firstName: "",
-    lastName: "",
-    email: "",
+    firstName: userInfo ? userInfo[0].name.split(" ")[0] : "",
+    lastName: userInfo ? userInfo[0].name.split(" ")[1] : "",
+    email: userInfo ? userInfo[0].email : "",
     wallet: "",
     profileImage: null,
     referralId: "",
@@ -51,6 +52,7 @@ export default function RegistrationWeb3(props) {
     bankName: "",
     licenseImage: null,
     other_info: "",
+    pkey: userInfo ? userInfo[1] : null,
   });
 
   const [role, setRole] = useState(0);
@@ -93,8 +95,8 @@ export default function RegistrationWeb3(props) {
   }, [settings]);
 
   useEffect(() => {
-    if (state.wallet === "" && connector.connected) {
-      setState({ ...state, wallet: connector.accounts[0] });
+    if (state.wallet === "" && walletAddress) {
+      setState({ ...state, wallet: walletAddress });
     }
   }, [connector]);
 
@@ -249,15 +251,6 @@ export default function RegistrationWeb3(props) {
     }
   };
 
-  // const validateMobile = () => {
-  //   let mobileValid = true;
-  //   if (mobileWithoutCountry.length < 6) {
-  //     mobileValid = false;
-  //     Alert.alert(t("alert"), t("mobile_no_blank_error"));
-  //   }
-  //   return mobileValid;
-  // };
-
   //register button press for validation
   const onPressRegister = () => {
     const { onPressRegister } = props;
@@ -336,12 +329,23 @@ export default function RegistrationWeb3(props) {
           showsVerticalScrollIndicator={false}
         >
           {uploadImage()}
-          <View className="flex">
-            <Text className="font-bold text-center text-3xl text-white mb-5">
+          <View
+            style={{
+              display: "flex",
+            }}
+          >
+            <Text
+              style={{
+                fontWeight: 700,
+                fontSize: 20,
+                textAlign: "center",
+                color: colors.WHITE,
+              }}
+            >
               {t("createdProfile")}
             </Text>
           </View>
-          <View style={styles.form} className="bg-white">
+          <View style={styles.form}>
             <View style={styles.containerStyle}>
               {/* Profile Picture */}
               <Text style={styles.headerStyle}>{t("profile_picture")}</Text>
@@ -354,14 +358,13 @@ export default function RegistrationWeb3(props) {
                     <Image
                       source={require("../../assets/images/cross.png")}
                       resizeMode={"contain"}
-                      className="w-7 h-7"
+                      style={{ width: 28, height: 28 }}
                     />
                   </TouchableOpacity>
                   <Image
                     source={{ uri: capturedImageProfile }}
-                    style={styles.photoProfile}
+                    style={styles.imageStyle}
                     resizeMode={"cover"}
-                    className="w-32 h-32 rounded-full align-center flex-col justify-center mb-6 mt-2"
                   />
                 </View>
               ) : (
@@ -382,7 +385,6 @@ export default function RegistrationWeb3(props) {
                     source={require("../../assets/images/profilePic.png")}
                     resizeMode={"contain"}
                     style={styles.imageStyle}
-                    className="w-32 h-32 rounded-full align-center flex-col justify-center mb-6 mt-2"
                   />
                 </View>
               )}
@@ -391,10 +393,20 @@ export default function RegistrationWeb3(props) {
               <Text style={styles.headerStyle}>{t("your_wallet")}</Text>
               <View style={styles.textInputContainerStyle}>
                 <Text
-                  style={styles.textInputStyle}
-                  className="px-5 py-2 rounded-full bg-gray-200 max-w-[76%] mb-7 h-10"
+                  style={{
+                    color: colors.BLUE,
+                    borderRadius: 999,
+                    backgroundColor: "rgb(229 231 235)",
+                    maxWidth: "76%",
+                    flex: 1,
+                    alignItems: "center",
+                    marginBottom: 7,
+                    height: 40,
+                    paddingHorizontal: 20,
+                    paddingVertical: 8,
+                  }}
                 >
-                  {state.wallet.slice(0, 15) + "..." + state.wallet.slice(-14)}
+                  {state.wallet.slice(0, 15) + "..." + state.wallet.slice(-13)}
                 </Text>
               </View>
               {/* First Name */}
@@ -418,7 +430,7 @@ export default function RegistrationWeb3(props) {
                   }}
                   inputContainerStyle={styles.inputContainerStyle}
                   containerStyle={styles.textInputStyle}
-                  className="bg-gray-200 rounded-full px-5 py-2 max-w-[76%] justify-center items-center mx-auto h-10"
+                  style={styles.inputStyle}
                 />
               </View>
               {/* Last Name */}
@@ -445,7 +457,7 @@ export default function RegistrationWeb3(props) {
                   }}
                   inputContainerStyle={styles.inputContainerStyle}
                   containerStyle={styles.textInputStyle}
-                  className="bg-gray-200 rounded-full px-5 py-2 max-w-[76%] justify-center items-center mx-auto h-10"
+                  style={styles.inputStyle}
                 />
               </View>
               {/* Email */}
@@ -471,7 +483,7 @@ export default function RegistrationWeb3(props) {
                   }}
                   inputContainerStyle={styles.inputContainerStyle}
                   containerStyle={styles.textInputStyle}
-                  className="bg-gray-200 rounded-full px-5 py-2 max-w-[76%] justify-center items-center mx-auto h-10"
+                  style={styles.inputStyle}
                 />
               </View>
               {/* Select Client or Driver */}
@@ -489,8 +501,6 @@ export default function RegistrationWeb3(props) {
                   labelHorizontal={true}
                   buttonColor={colors.BLUE}
                   labelColor={colors.BLUE}
-                  // style={isRTL ? { marginRight: 20 } : { marginLeft: 20 }}
-                  className="mx-auto"
                   labelStyle={isRTL ? { marginRight: 10 } : { marginRight: 10 }}
                   selectedButtonColor={colors.BLUE}
                   selectedLabelColor={colors.BLUE}
@@ -506,10 +516,8 @@ export default function RegistrationWeb3(props) {
                     styles.textInputContainerStyle,
                     {
                       marginBottom: Platform.OS === "ios" ? 10 : 15,
-                      flexDirection: "column",
                     },
                   ]}
-                  className="flex items-center justify-center"
                 >
                   <Text style={styles.headerStyle}>{t("typeofCar")}</Text>
                   {props.cars && (
@@ -566,7 +574,7 @@ export default function RegistrationWeb3(props) {
                     }}
                     inputContainerStyle={styles.inputContainerStyle}
                     containerStyle={styles.textInputStyle}
-                    className="bg-gray-200 rounded-full px-5 py-2 max-w-[76%] justify-center items-center mx-auto h-10"
+                    style={styles.inputStyle}
                   />
                 </View>
               )}
@@ -593,7 +601,7 @@ export default function RegistrationWeb3(props) {
                     }}
                     inputContainerStyle={styles.inputContainerStyle}
                     containerStyle={styles.textInputStyle}
-                    className="bg-gray-200 rounded-full px-5 py-2 max-w-[76%] justify-center items-center mx-auto h-10"
+                    style={styles.inputStyle}
                   />
                 </View>
               )}
@@ -622,7 +630,7 @@ export default function RegistrationWeb3(props) {
                     }}
                     inputContainerStyle={styles.inputContainerStyle}
                     containerStyle={styles.textInputStyle}
-                    className="bg-gray-200 rounded-full px-5 py-2 max-w-[76%] justify-center items-center mx-auto h-10"
+                    style={styles.inputStyle}
                   />
                 </View>
               )}
@@ -649,7 +657,7 @@ export default function RegistrationWeb3(props) {
                     }}
                     inputContainerStyle={styles.inputContainerStyle}
                     containerStyle={styles.textInputStyle}
-                    className="bg-gray-200 rounded-full px-5 py-2 max-w-[76%] justify-center items-center mx-auto h-10"
+                    style={styles.inputStyle}
                   />
                 </View>
               )}
@@ -678,7 +686,7 @@ export default function RegistrationWeb3(props) {
                     }}
                     inputContainerStyle={styles.inputContainerStyle}
                     containerStyle={styles.textInputStyle}
-                    className="bg-gray-200 rounded-full px-5 py-2 max-w-[76%] justify-center items-center mx-auto h-10"
+                    style={styles.inputStyle}
                   />
                 </View>
               ) : null}
@@ -707,7 +715,7 @@ export default function RegistrationWeb3(props) {
                         }}
                         inputContainerStyle={styles.inputContainerStyle}
                         containerStyle={styles.textInputStyle}
-                        className="bg-gray-200 rounded-full px-5 py-2 max-w-[76%] justify-center items-center mx-auto h-10"
+                        style={styles.inputStyle}
                       />
                     </View>
                   ))}
@@ -746,38 +754,6 @@ export default function RegistrationWeb3(props) {
                       />
                     </View>
                   ))}
-              {/* Id de Referencia */}
-              {/* <View
-                style={[
-                  styles.textInputContainerStyle,
-                  { flexDirection: isRTL ? "row-reverse" : "row" },
-                ]}
-              >
-                <Icon
-                  name="lock"
-                  type="font-awesome"
-                  color={colors.BLUE}
-                  size={24}
-                  containerStyle={styles.iconContainer}
-                />
-
-                <Input
-                  editable={true}
-                  underlineColorAndroid={colors.TRANSPARENT}
-                  placeholder={t("referral_id_placeholder")}
-                  placeholderTextColor={colors.BLUE}
-                  value={state.referralId}
-                  inputStyle={[
-                    styles.inputTextStyle,
-                    { textAlign: isRTL ? "right" : "left" },
-                  ]}
-                  onChangeText={(text) => {
-                    setState({ ...state, referralId: text });
-                  }}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  containerStyle={styles.textInputStyle}
-                />
-              </View> */}
               {state.usertype == "driver" &&
                 (capturedImage ? (
                   <View style={styles.imagePosition}>
@@ -788,7 +764,10 @@ export default function RegistrationWeb3(props) {
                       <Image
                         source={require("../../assets/images/cross.png")}
                         resizeMode={"contain"}
-                        className="w-10 h-10"
+                        style={{
+                          width: 40,
+                          height: 40,
+                        }}
                       />
                     </TouchableOpacity>
                     <Image
@@ -895,8 +874,24 @@ const styles = {
     borderBottomWidth: 0,
     borderBottomColor: colors.TRANSPARENT,
   },
+  inputStyle: {
+    borderRadius: 999,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   textInputStyle: {
     color: colors.BLUE,
+    borderRadius: 999,
+    backgroundColor: "rgb(229 231 235)",
+    maxWidth: "76%",
+    flex: 1,
+    alignItems: "center",
+    marginBottom: 7,
+    height: 40,
   },
   iconContainer: {
     paddingBottom: 20,
@@ -959,6 +954,7 @@ const styles = {
   },
   form: {
     flex: 1,
+    backgroundColor: colors.WHITE,
   },
   logo: {
     width: "95%",
@@ -970,7 +966,10 @@ const styles = {
     height: height,
   },
   textInputContainerStyle: {
+    display: "flex",
+    flexDirection: "column",
     alignItems: "center",
+    justifyContent: "center",
   },
   headerStyle: {
     fontSize: 18,
@@ -1054,8 +1053,15 @@ const styles = {
     zIndex: 1,
   },
   imageStyle: {
-    width: 140,
-    height: 140,
+    width: 128,
+    height: 128,
+    borderRadius: 999,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "column",
+    marginBottom: 24,
+    marginTop: 8,
   },
   flexView1: {
     flex: 12,

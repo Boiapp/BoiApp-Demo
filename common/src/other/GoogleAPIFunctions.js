@@ -1,6 +1,4 @@
 import base64 from "react-native-base64";
-const username = "exilog";
-const password = "dWLF&%jn7PpEc2d";
 
 export const fetchPlacesAutocomplete = (searchKeyword) => (firebase) => {
   return new Promise((resolve, reject) => {
@@ -95,6 +93,7 @@ export const fetchAddressfromCoords = (latlng) => (firebase) => {
 export const getDistanceMatrix = (startLoc, destLoc) => (firebase) => {
   return new Promise((resolve, reject) => {
     const { config } = firebase;
+    console.log("startLoc", startLoc);
     fetch(`https://${config.project}.web.app/googleapis-getdistancematrix`, {
       method: "POST",
       headers: {
@@ -117,9 +116,10 @@ export const getDistanceMatrix = (startLoc, destLoc) => (firebase) => {
         }
       })
       .catch((error) => {
-        console.log(error);
-        reject("getDistanceMatrix Call Error");
+        reject("getDistanceMatrix Call Error", error);
       });
+  }).catch((error) => {
+    reject("getDistanceMatrix Call Error", error);
   });
 };
 
@@ -157,5 +157,8 @@ export const getDirectionsApi =
           console.log(error);
           reject("getDirectionsApi Call Error");
         });
+    }).catch((error) => {
+      console.log(error);
+      reject("getDirectionsApi Call Error");
     });
   };

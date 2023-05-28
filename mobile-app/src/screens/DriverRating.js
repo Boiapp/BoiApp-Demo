@@ -21,9 +21,11 @@ import { ethers } from "ethers";
 import POT from "../../artifacts/contracts/POT.sol/POT.json";
 import { useWalletConnect } from "@walletconnect/react-native-dapp";
 import { API_KEY } from "@env";
+import { ConnectionMode } from "../types/types";
 
 export default function DriverRating(props) {
   const { api } = useContext(FirebaseContext);
+  const auth = useSelector((state) => state.auth);
   const { updateBooking } = api;
   const dispatch = useDispatch();
   const { t } = i18n;
@@ -36,6 +38,8 @@ export default function DriverRating(props) {
   const [booking, setBooking] = useState();
   const [loading, setLoading] = useState(false);
   const { bookingId } = props.route.params;
+  const connectionMode = auth.info.connectionMode;
+  const passengerAddress = auth.info.profile.wallet;
 
   useEffect(() => {
     if (activeBookings && activeBookings.length >= 1) {
@@ -49,6 +53,7 @@ export default function DriverRating(props) {
   }, [activeBookings]);
 
   const onStarRatingPress = (rating) => {
+    setLoading(false);
     setStarCount(rating);
   };
 
@@ -61,6 +66,7 @@ export default function DriverRating(props) {
 
   /* INTERACTION SMART CONTRACT */
   const connector = useWalletConnect();
+
   const PassengerConfirm = async () => {
     setLoading(true);
     const addressContract = booking?.addressContract;
@@ -87,8 +93,7 @@ export default function DriverRating(props) {
         }
       }
     }
-    const passengerAddress = connector.accounts[0];
-    let alchemy = new ethers.providers.AlchemyProvider("maticmum", API_KEY);
+    const alchemy = new ethers.providers.AlchemyProvider("maticmum", API_KEY);
     const ifacePOT = new ethers.utils.Interface(POT.abi);
     const confirmDelivery = ifacePOT.encodeFunctionData(
       "confirmDeliveryByPassenger",
@@ -103,17 +108,25 @@ export default function DriverRating(props) {
       chainId: 80001,
     };
     try {
-      await connector.sendTransaction(txPOT).then(async (res) => {
-        await alchemy
-          .waitForTransaction(res, 1)
-          .then((res) => {
-            setLoading(false);
-            return { res: "success" };
-          })
-          .catch((err) => {
-            console.log("err", err);
-          });
-      });
+      if (connectionMode === ConnectionMode.WALLETCONNECT) {
+        await connector.sendTransaction(txPOT).then(async (res) => {
+          await alchemy
+            .waitForTransaction(res, 1)
+            .then((res) => {
+              setLoading(false);
+              return { res: "success" };
+            })
+            .catch((err) => {
+              console.log("err", err);
+            });
+        });
+      } else if (connectionMode === ConnectionMode.WEB3AUTH) {
+        const wallet = new ethers.Wallet(auth.info.profile.pkey, alchemy);
+        const tx = await wallet.sendTransaction(txPOT);
+        await tx.wait();
+        setLoading(false);
+        return { res: "success" };
+      }
     } catch (err) {
       console.log("err", err);
       return { err: err };
@@ -233,8 +246,8 @@ export default function DriverRating(props) {
         ) : (
           <Text style={styles.rateViewTextStyle}>
             {booking
-              ? booking.customer_paid > 0
-                ? parseFloat(booking.customer_paid).toFixed(settings.decimal)
+              ? booking.estimate > 0
+                ? parseFloat(booking.estimate).toFixed(settings.decimal)
                 : 0
               : null}
             {settings.symbol}

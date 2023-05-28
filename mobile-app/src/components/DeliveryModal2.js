@@ -41,7 +41,6 @@ export default function DeliveryModal2(props) {
         <KeyboardAvoidingView behavior={"position"}>
           <View style={styles.modalView}>
             <Text
-              // className="text-4xl font-extrabold text-[#0069ff] mx-auto"
               style={{
                 color: colors.BLUE,
                 fontWeight: "800",
@@ -55,7 +54,6 @@ export default function DeliveryModal2(props) {
 
             <View style={styles.textInputContainerStyle}>
               <View
-                // className="flex-row w-full px-16 my-2 justify-between "
                 style={{
                   flexDirection: "row",
                   w: "100%",
@@ -65,19 +63,15 @@ export default function DeliveryModal2(props) {
                 }}
               >
                 <View style={styles.hbox1}>
-                  <View
-                    style={styles.hbox1_1} /* className="mx-auto my-auto" */
-                  />
+                  <View style={styles.hbox1_1} />
                 </View>
-                <View style={styles.hbox2} /* className="my-auto" */ />
+                <View style={styles.hbox2} />
                 <View style={styles.hbox3}>
-                  <View
-                    style={styles.hbox3_1} /* className="mx-auto my-auto" */
-                  />
+                  <View style={styles.hbox3_1} />
                 </View>
               </View>
               <View
-                /* className="px-2 flex-row justify-between  w-full" */ style={{
+                style={{
                   paddingHorizontal: 8,
                   flexDirection: "row",
                   justifyContent: "space-between",
@@ -85,14 +79,14 @@ export default function DeliveryModal2(props) {
                 }}
               >
                 <View
-                  /* className="mr-1" */ style={{
+                  style={{
                     marginRight: 4,
                     flexShrink: 1,
                     width: 150,
                   }}
                 >
                   <Text
-                    /* className="text-md font-bold text-white" */ style={{
+                    style={{
                       fontSize: 12,
                       lineHeight: 14,
                       fontWeight: "700",
@@ -103,7 +97,7 @@ export default function DeliveryModal2(props) {
                     {tripPickup?.add?.split(",")[0]}
                   </Text>
                   <Text
-                    /* className="mx-auto text-xs font-bold text-slate-400" */ style={{
+                    style={{
                       marginHorizontal: 20,
                       fontSize: 12,
                       lineHeight: 16,
@@ -116,7 +110,6 @@ export default function DeliveryModal2(props) {
                   </Text>
                 </View>
                 <View
-                  /* className="ml-1 break-words" */
                   style={{
                     marginLeft: 10,
                     flexShrink: 1,
@@ -124,7 +117,7 @@ export default function DeliveryModal2(props) {
                   }}
                 >
                   <Text
-                    /* className="text-md font-bold text-white" */ style={{
+                    style={{
                       fontSize: 12,
                       lineHeight: 14,
                       color: colors.WHITE,
@@ -135,7 +128,6 @@ export default function DeliveryModal2(props) {
                     {tripDrop?.add?.split(",")[0]}
                   </Text>
                   <Text
-                    /* className="mx-auto text-xs font-bold text-slate-400" */
                     style={{
                       marginHorizontal: 20,
                       fontSize: 12,
@@ -150,7 +142,6 @@ export default function DeliveryModal2(props) {
                 </View>
               </View>
               <View
-                /* className="flex-col mx-auto justify-center py-4" */
                 style={{
                   flexDirection: "column",
                   justifyContent: "center",
@@ -159,14 +150,10 @@ export default function DeliveryModal2(props) {
                   width: 140,
                 }}
               >
-                <Text
-                  // className="mx-auto text-slate-400"
-                  style={{ color: colors.SLATE, textAlign: "center" }}
-                >
+                <Text style={{ color: colors.SLATE, textAlign: "center" }}>
                   Pasajero
                 </Text>
                 <Text
-                  // className="text-xl mx-auto text-slate-50"
                   style={{
                     fontSize: 20,
                     lineHeight: 28,
@@ -201,21 +188,16 @@ export default function DeliveryModal2(props) {
             </View> */}
 
             <View
-              // className="mt-2 flex-col mx-auto"
               style={{
                 marginTop: 8,
                 flexDirection: "column",
                 marginHorizontal: 95,
               }}
             >
-              <Text
-                style={{ color: colors.BLUE, textAlign: "center" }}
-                // className="text-center"
-              >
+              <Text style={{ color: colors.BLUE, textAlign: "center" }}>
                 {tripCar?.name}
               </Text>
               <View
-                // className="w-auto bg-slate-200 rounded-2xl"
                 style={{
                   width: "auto",
                   backgroundColor: "#E2e8f0",
@@ -277,7 +259,6 @@ export default function DeliveryModal2(props) {
                   //     : 0}
                   // </Text>
                   <View
-                    // className="flex-row align-middle justify-center bg-[#E2E8F0] rounded-lg px-4 my-4"
                     style={{
                       flexDirection: "row",
                       alignContent: "center",
@@ -296,7 +277,6 @@ export default function DeliveryModal2(props) {
                       }
                       resizeMode="contain"
                       style={{ width: 40, marginVertical: 20 }}
-                      // className="w-10 my-auto"
                     />
                     <RNPickerSelect
                       placeholder={{

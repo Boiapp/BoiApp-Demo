@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useContext,
+  useCallback,
+} from "react";
 import {
   StyleSheet,
   View,
@@ -47,6 +53,8 @@ import {
   API_KEY,
 } from "@env";
 import { AnimatedMapView } from "react-native-maps/lib/MapView";
+import useInterval from "../hooks/useInterval";
+import { useIsFocused } from "@react-navigation/native";
 
 export default function BookedCabScreen(props) {
   const { api, appcat } = useContext(FirebaseContext);
@@ -74,6 +82,7 @@ export default function BookedCabScreen(props) {
   const [cancelReasonSelected, setCancelReasonSelected] = useState(0);
   const [otpModalVisible, setOtpModalVisible] = useState(false);
   const lastLocation = useSelector((state) => state.locationdata.coords);
+  const [lastLocationCache, setLastLocationCache] = useState(null);
   const [liveRouteCoords, setLiveRouteCoords] = useState(null);
   const mapRef = useRef();
   const pageActive = useRef();
@@ -156,35 +165,41 @@ export default function BookedCabScreen(props) {
   const connector = useWalletConnect();
 
   useEffect(() => {
-    setInterval(() => {
-      if (
-        pageActive.current &&
-        curBooking &&
-        lastLocation &&
-        (curBooking.status == "ACCEPTED" || curBooking.status == "STARTED")
-      ) {
-        if (
-          lastCoords &&
-          lastCoords.lat != lastLocation.lat &&
-          lastCoords.lat != lastLocation.lng
-        ) {
-          if (curBooking.status == "ACCEPTED") {
-            let point1 = { lat: lastLocation.lat, lng: lastLocation.lng };
-            let point2 = {
-              lat: curBooking.pickup.lat,
-              lng: curBooking.pickup.lng,
-            };
-            fitMap(point1, point2);
-          } else {
-            let point1 = { lat: lastLocation.lat, lng: lastLocation.lng };
-            let point2 = { lat: curBooking.drop.lat, lng: curBooking.drop.lng };
-            fitMap(point1, point2);
-          }
-          setlastCoords(lastLocation);
-        }
-      }
-    }, 20000);
-  }, []);
+    const diff = 0.003; //(aproximadamente 0.003 grados representa alrededor de 300 metros)
+
+    if (
+      lastLocation &&
+      (!lastLocationCache ||
+        Math.abs(lastLocation.lat - lastLocationCache.lat) > diff ||
+        Math.abs(lastLocation.lng - lastLocationCache.lng) > diff)
+    ) {
+      setLastLocationCache(lastLocation);
+    }
+  }, [lastLocation, lastLocationCache]);
+
+  const fitMapCallback = useCallback(() => {
+    if (
+      pageActive.current &&
+      curBooking &&
+      lastLocationCache &&
+      (curBooking.status === "ACCEPTED" || curBooking.status === "STARTED") &&
+      lastCoords &&
+      (lastCoords.lat !== lastLocationCache.lat ||
+        lastCoords.lng !== lastLocationCache.lng)
+    ) {
+      let point1 = { lat: lastLocationCache.lat, lng: lastLocationCache.lng };
+      let point2 =
+        curBooking.status === "ACCEPTED"
+          ? { lat: curBooking.pickup.lat, lng: curBooking.pickup.lng }
+          : { lat: curBooking.drop.lat, lng: curBooking.drop.lng };
+      fitMap(point1, point2, "callBack interval");
+      setlastCoords(lastLocationCache);
+    }
+  }, [pageActive, curBooking, lastLocationCache, lastCoords]);
+
+  useInterval(fitMapCallback, 60000);
+
+  const isFocused = useIsFocused();
 
   useEffect(() => {
     let timeout;
@@ -197,7 +212,7 @@ export default function BookedCabScreen(props) {
       timeout = setTimeout(() => {
         let point1 = { lat: lastLocation.lat, lng: lastLocation.lng };
         let point2 = { lat: curBooking.pickup.lat, lng: curBooking.pickup.lng };
-        fitMap(point1, point2);
+        fitMap(point1, point2, "call by timeout 215");
         setlastCoords(lastLocation);
       }, 60000);
     }
@@ -220,21 +235,21 @@ export default function BookedCabScreen(props) {
         );
       }, 1000);
     }
+    // if (
+    //   lastLocationCache &&
+    //   curBooking &&
+    //   curBooking.status == "STARTED" &&
+    //   pageActive.current
+    // ) {
+    //   timeout = setTimeout(async () => {
+    //     let point1 = { lat: lastLocationCache.lat, lng: lastLocationCache.lng };
+    //     let point2 = { lat: curBooking.drop.lat, lng: curBooking.drop.lng };
+    //     fitMap(point1, point2, "call by timeout 247");
+    //     setlastCoords(lastLocationCache);
+    //   }, 60000);
+    // }
     if (
-      lastLocation &&
-      curBooking &&
-      curBooking.status == "STARTED" &&
-      pageActive.current
-    ) {
-      timeout = setTimeout(async () => {
-        let point1 = { lat: lastLocation.lat, lng: lastLocation.lng };
-        let point2 = { lat: curBooking.drop.lat, lng: curBooking.drop.lng };
-        fitMap(point1, point2);
-        setlastCoords(lastLocation);
-      }, 60000);
-    }
-    if (
-      lastLocation &&
+      lastLocationCache &&
       curBooking &&
       curBooking.status == "REACHED" &&
       role == "rider" &&
@@ -247,7 +262,10 @@ export default function BookedCabScreen(props) {
               latitude: curBooking.pickup.lat,
               longitude: curBooking.pickup.lng,
             },
-            { latitude: lastLocation.lat, longitude: lastLocation.lng },
+            {
+              latitude: lastLocationCache.lat,
+              longitude: lastLocationCache.lng,
+            },
           ],
           {
             edgePadding: { top: 40, right: 40, bottom: 40, left: 40 },
@@ -257,9 +275,10 @@ export default function BookedCabScreen(props) {
       }, 1000);
     }
     return () => clearTimeout(timeout);
-  }, [lastLocation, curBooking, pageActive.current]);
+  }, [lastLocationCache, curBooking, pageActive.current]);
 
-  const fitMap = (point1, point2) => {
+  const fitMap = (point1, point2, by) => {
+    console.log("callBy", by);
     let startLoc = point1.lat + "," + point1.lng;
     let destLoc = point2.lat + "," + point2.lng;
     if (settings.showLiveRoute) {

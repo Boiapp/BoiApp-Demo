@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { RegistrationWeb3 } from "../../components";
-import { StyleSheet, View, Alert } from "react-native";
+import { StyleSheet, View, Alert, Text } from "react-native";
 import { useSelector } from "react-redux";
 
 import i18n from "i18n-js";
@@ -13,7 +13,9 @@ export default function RegistrationScreen(props) {
   const [loading, setLoading] = useState(false);
   const cars = useSelector((state) => state.cartypes.cars);
   const [carTypes, setCarTypes] = useState(null);
-  const connector = useWalletConnect();
+
+  const { walletAddress, connectByWc, connectByW3A, userInfo } =
+    props.route.params;
 
   const { t } = i18n;
 
@@ -51,7 +53,6 @@ export default function RegistrationScreen(props) {
                   setLoading(false);
                   if (res.uid) {
                     Alert.alert(t("alert"), t("account_create_successfully"));
-                    // props.navigation.navigate("DrawerRoot");
                     props.navigation.goBack();
                   } else {
                     Alert.alert(t("alert"), t("reg_error"));
@@ -73,7 +74,7 @@ export default function RegistrationScreen(props) {
               type: "SAVE_TOKEN",
               payload: res.token,
             });
-            if (res.uid && connector.connected) {
+            if ((res.uid && connectByWc) || (res.uid && connectByW3A)) {
               Alert.alert(t("alert"), t("account_create_successfully"));
               props.navigation.goBack();
             } else {
@@ -95,8 +96,22 @@ export default function RegistrationScreen(props) {
             props.navigation.goBack();
           }}
           loading={loading}
+          walletAddress={walletAddress}
+          connectByWc={connectByWc}
+          connectByW3A={connectByW3A}
+          userInfo={userInfo}
         ></RegistrationWeb3>
-      ) : null}
+      ) : (
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Text>Loading...</Text>
+        </View>
+      )}
     </View>
   );
 }
