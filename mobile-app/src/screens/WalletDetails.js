@@ -1,40 +1,188 @@
-import React, { useCallback, useEffect, useState } from "react";
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableWithoutFeedback,
-  Dimensions,
-  Alert,
-  Image,
-  Modal,
-  KeyboardAvoidingView,
-  Button,
-  Pressable,
-  Share,
-  ToastAndroid,
-} from "react-native";
-import { Header, Icon } from "react-native-elements";
-import { colors } from "../common/theme";
-var { height, width } = Dimensions.get("window");
-import i18n from "i18n-js";
-import { useSelector } from "react-redux";
-import { TouchableOpacity } from "react-native-gesture-handler";
 import { DrawerActions } from "@react-navigation/native";
 import * as Clipboard from "expo-clipboard";
+import i18n from "i18n-js";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  Alert,
+  Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Pressable,
+  Share,
+  StyleSheet,
+  Text,
+  ToastAndroid,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
+import { Button, Header, Icon, Input } from "react-native-elements";
+import { TouchableOpacity } from "react-native-gesture-handler";
 import QRCode from "react-qr-code";
+import { useSelector } from "react-redux";
+import { colors } from "../common/theme";
+var { height, width } = Dimensions.get("window");
+import { ConnectionMode } from "../types/types";
 
 import RPC from "../etherRPC";
+
+const ModalWithdrawTokens = (props) => {
+  const { modalWithdrawVisible, setModalWithdrawVisible, walletBalance, pkey } =
+    props;
+  const [amount, setAmount] = useState("0");
+  const [withdrawAddress, setWithdrawAddress] = useState("");
+  const [loadingWithdraw, setLoadingWithdraw] = useState(false);
+  const doWithdraw = () => {
+    if (amount == "" || withdrawAddress == "") {
+      ToastAndroid.show("Por favor, rellene todos los campos", 2000);
+      return;
+    }
+    if (parseFloat(amount) > parseFloat(walletBalance[0])) {
+      ToastAndroid.show("No tienes suficientes fondos", 2000);
+      return;
+    }
+    setLoadingWithdraw(true);
+    RPC.sendTransaction(pkey, withdrawAddress, amount)
+      .then((result) => {
+        if (result) {
+          ToastAndroid.show("Transacción enviada", ToastAndroid.SHORT);
+          setModalWithdrawVisible(!modalWithdrawVisible);
+          setLoadingWithdraw(false);
+          setAmount("0");
+          setWithdrawAddress("");
+        } else {
+          ToastAndroid.show("Error al enviar transacción", ToastAndroid.SHORT);
+          setModalWithdrawVisible(!modalWithdrawVisible);
+          setLoadingWithdraw(false);
+          setAmount("0");
+          setWithdrawAddress("");
+        }
+      })
+      .catch((error) => {
+        ToastAndroid.show("Error al enviar transacción", ToastAndroid.SHORT);
+        setModalWithdrawVisible(!modalWithdrawVisible);
+        setLoadingWithdraw(false);
+        setAmount("0");
+        setWithdrawAddress("");
+      });
+  };
+  return (
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={modalWithdrawVisible}
+    >
+      <View style={styles.centeredView}>
+        <KeyboardAvoidingView behavior={"position"}>
+          <View style={styles.modalView}>
+            {/* Close modal*/}
+            <View
+              style={{
+                position: "absolute",
+                right: 10,
+                top: 10,
+                zIndex: 10,
+              }}
+            >
+              <Icon
+                name="close"
+                type="material"
+                size={30}
+                onPress={() => {
+                  setModalWithdrawVisible(!modalWithdrawVisible);
+                }}
+              />
+            </View>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Retirar USDT</Text>
+              {/* Saldo */}
+              <View style={styles.modalBalanceContainer}>
+                <Text style={styles.labelStyle}>Saldo:</Text>
+                <Text style={styles.labelStyle}>{walletBalance[0]} USDT</Text>
+              </View>
+              {/*  Inputs  */}
+              <View style={styles.inputsContainer}>
+                <View style={styles.inputAndLabelContainer}>
+                  <Text style={styles.labelStyle}>Cantidad:</Text>
+                  <Input
+                    style={styles.inputStyle}
+                    onChangeText={(text) => {
+                      setAmount(text);
+                    }}
+                    value={amount}
+                    keyboardType="numeric"
+                    editable={true}
+                    underlineColorAndroid={colors.TRANSPARENT}
+                    placeholderTextColor={colors.BLUE}
+                    inputStyle={styles.inputTextStyle}
+                    inputContainerStyle={styles.inputContainerStyle}
+                    key={1}
+                  />
+                </View>
+                <View
+                  style={[
+                    styles.inputAndLabelContainer,
+                    {
+                      gap: 4,
+                    },
+                  ]}
+                >
+                  <Text style={styles.labelStyle}>Dirección:</Text>
+                  <Input
+                    style={styles.inputStyle}
+                    onChangeText={(text) => setWithdrawAddress(text)}
+                    inputContainerStyle={styles.inputContainerStyle}
+                    value={withdrawAddress}
+                    keyboardType="default"
+                    editable={true}
+                    underlineColorAndroid={colors.TRANSPARENT}
+                    placeholderTextColor={colors.BLUE}
+                    inputStyle={styles.inputTextStyle}
+                    key={2}
+                  />
+                </View>
+              </View>
+              <View style={styles.modalBalanceContainer}>
+                <Text style={{ fontSize: 20, fontWeight: "bold" }}>Total:</Text>
+                <Text style={{ fontSize: 20, fontWeight: "bold" }}>
+                  {amount} USDT
+                </Text>
+              </View>
+              <Button
+                title="Retirar"
+                loading={loadingWithdraw}
+                loadingProps={{ size: 10 }}
+                titleStyle={styles.buttonTitleStyle}
+                onPress={doWithdraw}
+                buttonStyle={styles.buttonStyle}
+                containerStyle={styles.buttonContainer}
+                icon={{
+                  name: "cash-fast",
+                  type: "material-community",
+                  size: 28,
+                  color: colors.WHITE,
+                }}
+                iconRight
+              />
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
+  );
+};
 
 export default function WalletDetails(props) {
   const auth = useSelector((state) => state.auth);
   const settings = useSelector((state) => state.settingsdata.settings);
   const providers = useSelector((state) => state.paymentmethods.providers);
-  const walletAddress = auth.info.profile.wallet;
+  const walletAddress = auth.info?.profile?.wallet;
   const [profile, setProfile] = useState();
+  const connectionMode = auth ? auth.info?.connectionMode : null;
   const [walletBalance, setWalletBalance] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [copiedWalletAddress, setCopiedWalletAddress] = useState("");
+  const [modalWithdrawVisible, setModalWithdrawVisible] = useState(false);
   const getBalance = useCallback(async () => {
     const balance = await RPC.getBalance(walletAddress);
     return balance;
@@ -46,42 +194,28 @@ export default function WalletDetails(props) {
         setWalletBalance(balance);
       });
     }
-  }, [walletAddress]);
+  }, [walletAddress, modalWithdrawVisible]);
 
   const { t } = i18n;
   const isRTL =
     i18n.locale.indexOf("he") === 0 || i18n.locale.indexOf("ar") === 0;
 
   useEffect(() => {
-    if (auth.info && auth.info.profile) {
+    if (auth.info && auth.info?.profile) {
       setProfile(auth.info.profile);
     } else {
       setProfile(null);
     }
   }, [auth.info]);
 
-  const doReacharge = () => {
-    setModalVisible(true);
+  const refetchBalance = () => {
+    getBalance().then((balance) => {
+      setWalletBalance(balance);
+    });
   };
 
-  const doWithdraw = () => {
-    if (
-      !(profile.mobile && profile.mobile.length > 6) ||
-      profile.email == " " ||
-      profile.firstName == " " ||
-      profile.lastName == " "
-    ) {
-      Alert.alert(t("alert"), t("profile_incomplete"));
-      props.navigation.navigate("editUser");
-    } else {
-      if (parseFloat(auth.info.profile.walletBalance) > 0) {
-        props.navigation.push("withdrawMoney", {
-          userdata: { ...auth.info.profile, uid: auth.info.uid },
-        });
-      } else {
-        Alert.alert(t("alert"), t("wallet_zero"));
-      }
-    }
+  const doReacharge = () => {
+    setModalVisible(true);
   };
 
   const copyToClipboard = async () => {
@@ -116,11 +250,16 @@ export default function WalletDetails(props) {
   const rCom =
     auth.info &&
     auth.info.profile &&
+    ConnectionMode.WEB3AUTH === connectionMode &&
     (auth.info.profile.usertype == "driver" ||
       (auth.info.profile.usertype == "rider" &&
         settings &&
         settings.RiderWithDraw)) ? (
-      <TouchableOpacity onPress={doWithdraw}>
+      <TouchableOpacity
+        onPress={() => {
+          setModalWithdrawVisible(true);
+        }}
+      >
         <Text style={{ color: colors.WHITE, marginTop: 5 }}>
           {t("withdraw")}
         </Text>
@@ -237,9 +376,33 @@ export default function WalletDetails(props) {
                   flexDirection: "column",
                 }}
               >
-                <Text style={{ textAlign: "center", fontSize: 18 }}>
-                  {t("wallet_ballance")}
-                </Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ textAlign: "center", fontSize: 18 }}>
+                    {t("wallet_ballance")}
+                  </Text>
+                  {/* Refetch */}
+                  <Button
+                    onPress={refetchBalance}
+                    icon={{
+                      name: "refresh",
+                      type: "material",
+                      size: 20,
+                      color: colors.BALANCE_GREEN,
+                    }}
+                    buttonStyle={{
+                      backgroundColor: colors.TRANSPARENT,
+                      borderRadius: 50,
+                      paddingHorizontal: 0,
+                      paddingVertical: 0,
+                    }}
+                  />
+                </View>
                 <View
                   style={{
                     flexDirection: "row",
@@ -257,12 +420,9 @@ export default function WalletDetails(props) {
                     }}
                   >
                     {settings.symbol}
-                    {/* {auth.info && auth.info.profile
-                      ? parseFloat(auth.info.profile.walletBalance).toFixed(
-                          settings.decimal
-                        )
-                      : ""} */}
-                    {walletBalance[0]}
+                    {walletBalance[0] !== undefined
+                      ? parseFloat(walletBalance[0]).toFixed(settings.decimal)
+                      : "0"}
                   </Text>
                   <Image
                     source={require("../../assets/images/USDT.png")}
@@ -339,6 +499,14 @@ export default function WalletDetails(props) {
           </View>
         </View>
       </View>
+      <ModalWithdrawTokens
+        modalWithdrawVisible={modalWithdrawVisible}
+        setModalWithdrawVisible={setModalWithdrawVisible}
+        walletAddress={walletAddress}
+        walletBalance={walletBalance}
+        setWalletBalance={setWalletBalance}
+        pkey={auth.info?.profile?.pkey}
+      />
       <ModalReceiveTokens />
     </View>
   );
@@ -352,8 +520,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.BACKGROUND,
   },
   modalView: {
-    margin: 20,
+    width: 350,
     backgroundColor: "white",
+    justifyContent: "center",
+    alignContent: "center",
     borderRadius: 20,
     padding: 20,
     alignItems: "flex-start",
@@ -366,6 +536,47 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  modalBalanceContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 20,
+  },
+  modalContent: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 20,
+    width: "100%",
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  inputsContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 20,
+    width: "100%",
+  },
+  inputAndLabelContainer: {
+    width: "100%",
+    height: 45,
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  inputStyle: {
+    height: 40,
+    borderColor: "gray",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+  },
+  inputContainerStyle: {
+    width: 200,
+  },
   headerStyle: {
     backgroundColor: colors.HEADER,
     borderBottomWidth: 0,
@@ -375,7 +586,7 @@ const styles = StyleSheet.create({
     fontFamily: "Roboto-Bold",
     fontSize: 20,
   },
-
+  labelStyle: { fontSize: 20, fontWeight: "bold" },
   textContainer: {
     textAlign: "center",
   },
@@ -399,5 +610,25 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     letterSpacing: 0.25,
     color: "white",
+  },
+  buttonContainer: {
+    height: 50,
+    alignItems: "center",
+    backgroundColor: colors.ORANGE,
+    borderRadius: 15,
+  },
+  buttonStyle: {
+    height: 50,
+    width: 150,
+    justifyContent: "center",
+    alignItems: "center",
+    marginVertical: "auto",
+    backgroundColor: colors.ORANGE,
+  },
+  buttonTitleStyle: {
+    color: colors.WHITE,
+    fontFamily: "Roboto-Bold",
+    fontSize: 18,
+    elevation: 2,
   },
 });

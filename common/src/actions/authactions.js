@@ -15,7 +15,7 @@ import {
 
 import store from "../store/store";
 import { onAuthStateChanged, signInWithCustomToken } from "firebase/auth";
-import { child, get, onValue, remove, set } from "firebase/database";
+import { child, get, onValue, remove, set, update } from "firebase/database";
 import { getDownloadURL, uploadBytes } from "firebase/storage";
 
 export const fetchProfile = () => (dispatch) => (firebase) => {
@@ -339,6 +339,7 @@ export const walletSignIn = (id) => async (firebase) => {
 
 export const checkUserExists = (regData) => async (firebase) => {
   const { config } = firebase;
+
   const response = await fetch(
     `https://${config.project}.web.app/check_user_exists`,
     {
@@ -366,7 +367,6 @@ export const mainSignUp = (regData) => async (firebase) => {
       console.log(error);
     }
   );
-  console.log("regData.licenseImage", regData.licenseImage);
   regData.licenseImage = await getDownloadURL(driverDocsRef(timestamp));
   const response = await fetch(url, {
     method: "POST",
@@ -664,7 +664,6 @@ export const signOut = () => (dispatch) => (firebase) => {
 
 export const deleteUser = (uid) => (dispatch) => async (firebase) => {
   const { config, singleUserRef, auth } = firebase;
-  console.log("deleteUser", uid);
   remove(singleUserRef(uid)).then(() => {
     if (auth.currentUser.uid == uid) {
       auth.signOut().then(() => {
@@ -700,8 +699,14 @@ export const updateProfile =
 
     if (updateData.licenseImage) {
       let timestamp = new Date().toISOString();
-      await driverDocsRef(timestamp).put(updateData.licenseImage);
-      updateData.licenseImage = await driverDocsRef(timestamp).getDownloadURL();
+      console.log("timestamp", timestamp);
+      await uploadBytes(
+        driverDocsRef(timestamp),
+        updateData.licenseImage
+      ).catch((error) => {
+        console.log("error", error);
+      });
+      updateData.licenseImage = await getDownloadURL(driverDocsRef(timestamp));
     }
 
     profile = { ...profile, ...updateData };
@@ -709,7 +714,7 @@ export const updateProfile =
       type: UPDATE_USER_PROFILE,
       payload: profile,
     });
-    singleUserRef(userAuthData.uid).update(updateData);
+    update(singleUserRef(userAuthData.uid), updateData);
   };
 
 export const updateProfileImage =

@@ -32,28 +32,10 @@ export default function SideMenu(props) {
   const settings = useSelector((state) => state.settingsdata.settings);
   const { t } = i18n;
   const [ethBalance, setEthBalance] = useState(0);
-  const [tokenBalance, setTokenBalance] = useState(NaN);
   const [isLoadingEthBalance, setIsLoadingEthBalance] = useState(false);
-  const [isLoadingTokenBalance, setIsLoadingTokenBalance] = useState(false);
-  const { session } = useWalletConnect();
 
   const isRTL =
     i18n.locale.indexOf("he") === 0 || i18n.locale.indexOf("ar") === 0;
-
-  const fetchEthBalance = useCallback(
-    async (account) => {
-      setIsLoadingEthBalance(true);
-      const url = `https://api-goerli.etherscan.io/api?module=account&action=balance&address=${account}&tag=latest&apikey=${ETHERSCAN_API_KEY}`;
-      const response = await fetch(url);
-      const data = await response.json();
-      if (data.status === "1") {
-        const balance = data.result / 1000000000000000000;
-        setEthBalance(balance);
-      }
-      setIsLoadingEthBalance(false);
-    },
-    [setEthBalance, setIsLoadingEthBalance]
-  );
 
   const connector = useWalletConnect();
 
@@ -203,68 +185,6 @@ export default function SideMenu(props) {
           props={props}
         ></SideMenuHeader>
       ) : null}
-      <View style={styles.balanceView}>
-        {isLoadingEthBalance && <ActivityIndicator size="small" />}
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Text
-            style={{
-              color: "white",
-              alignItems: "center",
-              fontSize: 20,
-              paddingVertical: 8,
-              paddingHorizontal: 4,
-              fontWeight: "700",
-              marginVertical: "auto",
-            }}
-          >
-            {!Number.isNaN(ethBalance) ? `$ ${ethBalance.toFixed(4)}` : ""}
-          </Text>
-          <Image
-            source={require("../../assets/images/tether-usdt.png")}
-            style={{
-              width: 12,
-              height: 10,
-              marginVertical: "auto",
-            }}
-          />
-        </View>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Text
-            style={{
-              color: "white",
-              alignItems: "center",
-              fontSize: 20,
-              paddingVertical: 8,
-              paddingHorizontal: 4,
-              fontWeight: "700",
-              marginVertical: "auto",
-            }}
-          >
-            {!Number.isNaN(ethBalance) ? `${ethBalance.toFixed(4)}` : ""}
-          </Text>
-          <Image
-            source={require("../../assets/images/polygon-matic.png")}
-            style={{
-              width: 12,
-              height: 12,
-              alignItems: "center",
-              marginVertical: "auto",
-            }}
-          />
-        </View>
-      </View>
       <View style={styles.compViewStyle}>
         {!!settings && auth.info && auth.info.profile ? (
           <FlatList

@@ -72,7 +72,6 @@ export default function Welcome(props) {
         network: OPENLOGIN_NETWORK.TESTNET, // or other networks
         whiteLabel: {
           name: "Boi App",
-
           defaultLanguage: "es",
           dark: true,
           theme: {
@@ -159,7 +158,6 @@ export default function Welcome(props) {
     if (auth.token !== null && walletAddress !== null) {
       setLoading(true);
       pageActive.current = true;
-      console.log("connectionMode", connectionMode);
       await dispatch(api.fetchUser(auth.token, connectionMode));
     } else {
       Alert.alert(t("alert"), t("otp_blank_error"));
@@ -189,12 +187,12 @@ export default function Welcome(props) {
                   });
                 }
               })
-              .catch((err) => console.log("err", err));
+              .catch((err) => console.log("err 190", err));
           } else if (res.error?.code === "auth/user-not-found") {
             setLoading(false);
           }
         })
-        .catch((err) => console.log("err", err));
+        .catch((err) => console.log("err 195", err));
     }
   }, [connectByW3A, connectByWc, walletAddress]);
 
@@ -234,6 +232,10 @@ export default function Welcome(props) {
       setLoading(false);
     }
   }, [auth.info, auth.error, auth.error.msg, auth.token, userExists]);
+
+  const ErrorTest = () => {
+    throw new Error("I crashed!");
+  };
 
   const unloggedInView = (
     <View style={styles.buttonAreaWC}>
@@ -290,7 +292,7 @@ export default function Welcome(props) {
           <Text style={styles.buttonTitle}>Google</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => login(LOGIN_PROVIDER.TWITTER)}
+          onPress={() => login(LOGIN_PROVIDER.LINKEDIN)}
           style={[
             styles.button,
             {
@@ -424,6 +426,7 @@ export default function Welcome(props) {
         <Button
           title="Necesitas ayuda?"
           type="clear"
+          onPress={ErrorTest}
           titleStyle={styles.buttonSecondary}
         />
       </SafeAreaView>

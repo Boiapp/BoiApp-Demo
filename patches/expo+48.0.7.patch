@@ -1,0 +1,11 @@
+diff --git a/node_modules/expo/AppEntry.js b/node_modules/expo/AppEntry.js
+index 9e1b283..339b684 100644
+--- a/node_modules/expo/AppEntry.js
++++ b/node_modules/expo/AppEntry.js
+@@ -1,5 +1,5 @@
+ import registerRootComponent from 'expo/build/launch/registerRootComponent';
+ 
+-import App from '../../App';
++import App from '../../mobile-app/index';
+ 
+ registerRootComponent(App);

@@ -1,8 +1,9 @@
 import "@ethersproject/shims";
 
 import { Buffer } from "buffer";
-import { ethers } from "ethers";
+import { ethers, providers } from "ethers";
 import { Alchemy, Network } from "alchemy-sdk";
+import TokenABI from "../assets/abi/Token.json";
 global.Buffer = global.Buffer || Buffer;
 
 import { API_KEY } from "@env";
@@ -71,9 +72,35 @@ const signMessage = async (key) => {
   }
 };
 
+const sendTransaction = async (key, addressTo, value) => {
+  try {
+    const ethersProvider = new ethers.providers.AlchemyProvider(
+      "maticmum",
+      API_KEY
+    );
+    const wallet = new ethers.Wallet(key, ethersProvider);
+    const tokenContract = new ethers.Contract(
+      tokenContractAddresses[0],
+      TokenABI.abi,
+      wallet
+    );
+
+    const tx = await tokenContract.transfer(
+      addressTo,
+      ethers.utils.parseEther(value.toString())
+    );
+    const receipt = await tx.wait();
+    console.log(receipt);
+    return receipt;
+  } catch (error) {
+    return error;
+  }
+};
+
 export default {
   getChainId,
   getAccounts,
   getBalance,
   signMessage,
+  sendTransaction,
 };

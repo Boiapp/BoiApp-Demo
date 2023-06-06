@@ -90,8 +90,8 @@ export default function MapScreen(props) {
   const activeBookings = useSelector((state) => state.bookinglistdata.active);
   const gps = useSelector((state) => state.gpsdata);
   const web3 = useSelector((state) => state.web3data);
-  const connectionMode = auth.info.connectionMode;
-  const passenger = auth.info.profile.wallet;
+  const connectionMode = auth.info?.connectionMode;
+  const passenger = auth.info?.profile.wallet;
   const isFocused = useIsFocused();
 
   /* Web3 */
@@ -179,7 +179,6 @@ export default function MapScreen(props) {
         const wallet = new ethers.Wallet(auth.info.profile.pkey, alchemy);
         const tx = await wallet.sendTransaction(txApprove);
         await tx.wait();
-        console.log("tx", tx);
         return { res: "success" };
       }
     } catch (err) {
@@ -499,7 +498,7 @@ export default function MapScreen(props) {
             },
             "gps"
           );
-          mapRef.current.animateToRegion({
+          mapRef.current?.animateToRegion({
             latitude: location.coords.latitude,
             longitude: location.coords.longitude,
             latitudeDelta: latitudeDelta,
@@ -628,9 +627,11 @@ export default function MapScreen(props) {
         }
         distArr = await getDistanceMatrix(startLoc, driverDest)
           .then((res) => {
+            console.log(res);
             return res;
           })
           .catch((err) => {
+            console.log(err);
             return [];
           });
 
@@ -682,7 +683,6 @@ export default function MapScreen(props) {
             : false;
         carWiseArr.push(temp);
       }
-
       setFreeCars(availableDrivers);
       setAllCarTypes(carWiseArr);
     }
@@ -711,7 +711,9 @@ export default function MapScreen(props) {
       if (
         selection == "drop" &&
         tripdata.selected &&
-        tripdata.selected == "pickup"
+        tripdata.selected === "pickup" &&
+        tripdata.drop !== null &&
+        mapRef.current
       ) {
         mapRef.current.animateToRegion({
           latitude: tripdata.drop.lat,
@@ -723,7 +725,9 @@ export default function MapScreen(props) {
       if (
         selection == "pickup" &&
         tripdata.selected &&
-        tripdata.selected == "drop"
+        tripdata.selected == "drop" &&
+        mapRef.current &&
+        tripdata.pickup !== null
       ) {
         mapRef.current.animateToRegion({
           latitude: tripdata.pickup.lat,

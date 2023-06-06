@@ -55,6 +55,7 @@ import {
 import { AnimatedMapView } from "react-native-maps/lib/MapView";
 import useInterval from "../hooks/useInterval";
 import { useIsFocused } from "@react-navigation/native";
+import { ConnectionMode } from "../types/types";
 
 export default function BookedCabScreen(props) {
   const { api, appcat } = useContext(FirebaseContext);
@@ -92,9 +93,11 @@ export default function BookedCabScreen(props) {
   const [purchaseInfoModalStatus, setPurchaseInfoModalStatus] = useState(false);
   const [userInfoModalStatus, setUserInfoModalStatus] = useState(false);
   const [confirmByApp, setConfirmByApp] = useState(false);
-  const [sendTxConfirmByApp, setSendTxConfirmByApp] = useState(false);
   const settings = useSelector((state) => state.settingsdata.settings);
   const confirmByAppState = useSelector((state) => state.web3data.success);
+  const connectionMode = auth.info?.connectionMode;
+  const driverAddress = auth.info?.profile.wallet;
+  const isFocused = useIsFocused();
 
   const { t } = i18n;
   const isRTL =
@@ -110,56 +113,47 @@ export default function BookedCabScreen(props) {
     }
   }, [auth.info]);
 
-  // Confirm POT by app
-  useEffect(() => {
+  const confirmByAppTx = useCallback(async () => {
     if (
       lastLocation &&
       curBooking &&
       !confirmByApp &&
+      !confirmByAppState &&
       role === "driver" &&
-      curBooking.status == "STARTED" &&
-      !confirmByAppState
+      curBooking.status == "STARTED"
     ) {
-      let confirm = setInterval(async () => {
-        let curBookingConfirm = false;
-        if (
-          typeof lastLocation === "object" &&
-          role === "driver" &&
-          !confirmByAppState &&
-          !confirmByApp &&
-          curBooking.status == "STARTED" &&
-          lastLocation?.lat.toString().slice(0, 7) ==
-            curBooking?.drop?.lat.toString().slice(0, 7) &&
-          lastLocation?.lng.toString().slice(0, 7) ==
-            curBooking?.drop?.lng.toString().slice(0, 7) &&
-          pageActive.current
-        ) {
-          const dist = await GetDistance(
-            lastLocation?.lat,
-            lastLocation?.lng,
-            curBooking?.drop?.lat,
-            curBooking?.drop?.lng
+      let curBookingConfirm = false;
+      if (
+        typeof lastLocation === "object" &&
+        role === "driver" &&
+        curBooking.status == "STARTED" &&
+        (lastLocation?.lat.toString().slice(0, 6) ==
+          curBooking?.drop?.lat.toString().slice(0, 6) ||
+          lastLocation?.lng.toString().slice(0, 6) ==
+            curBooking?.drop?.lng.toString().slice(0, 6)) &&
+        isFocused
+      ) {
+        const dist = await GetDistance(
+          lastLocation?.lat,
+          lastLocation?.lng,
+          curBooking?.drop?.lat,
+          curBooking?.drop?.lng
+        );
+        if (dist && dist <= 0.08) {
+          console.log("Confirming delivery by app");
+          const res = await dispatch(
+            confirmDeliveryByApp(curBooking?.addressContract)
           );
-          if (dist && dist <= 0.08) {
-            const res = await dispatch(
-              confirmDeliveryByApp(curBooking?.addressContract)
-            );
-            if (res.message == "OK") {
-              setConfirmByApp(true);
-              curBookingConfirm = true;
-            }
+          if (res.message == "OK") {
+            setConfirmByApp(true);
+            curBookingConfirm = true;
           }
         }
-        if (confirmByApp || curBookingConfirm) {
-          clearInterval(confirm);
-        }
-      }, 50000);
-      if (confirmByApp) {
-        clearInterval(confirm);
       }
-      return () => clearInterval(confirm);
     }
   }, [curBooking, confirmByApp, lastLocation, confirmByAppState]);
+
+  useInterval(confirmByAppTx, 50000);
 
   /* INTERACTION SMART CONTRACT */
   const connector = useWalletConnect();
@@ -187,7 +181,7 @@ export default function BookedCabScreen(props) {
       (lastCoords.lat !== lastLocationCache.lat ||
         lastCoords.lng !== lastLocationCache.lng)
     ) {
-      let point1 = { lat: lastLocationCache.lat, lng: lastLocationCache.lng };
+      let point1 = { lat: lastLocation.lat, lng: lastLocation.lng };
       let point2 =
         curBooking.status === "ACCEPTED"
           ? { lat: curBooking.pickup.lat, lng: curBooking.pickup.lng }
@@ -198,8 +192,6 @@ export default function BookedCabScreen(props) {
   }, [pageActive, curBooking, lastLocationCache, lastCoords]);
 
   useInterval(fitMapCallback, 60000);
-
-  const isFocused = useIsFocused();
 
   useEffect(() => {
     let timeout;
@@ -214,7 +206,7 @@ export default function BookedCabScreen(props) {
         let point2 = { lat: curBooking.pickup.lat, lng: curBooking.pickup.lng };
         fitMap(point1, point2, "call by timeout 215");
         setlastCoords(lastLocation);
-      }, 60000);
+      }, 5000);
     }
     if (curBooking && curBooking.status == "ARRIVED" && pageActive.current) {
       clearTimeout(timeout);
@@ -235,19 +227,19 @@ export default function BookedCabScreen(props) {
         );
       }, 1000);
     }
-    // if (
-    //   lastLocationCache &&
-    //   curBooking &&
-    //   curBooking.status == "STARTED" &&
-    //   pageActive.current
-    // ) {
-    //   timeout = setTimeout(async () => {
-    //     let point1 = { lat: lastLocationCache.lat, lng: lastLocationCache.lng };
-    //     let point2 = { lat: curBooking.drop.lat, lng: curBooking.drop.lng };
-    //     fitMap(point1, point2, "call by timeout 247");
-    //     setlastCoords(lastLocationCache);
-    //   }, 60000);
-    // }
+    if (
+      lastLocation &&
+      curBooking &&
+      curBooking.status == "STARTED" &&
+      isFocused
+    ) {
+      timeout = setTimeout(async () => {
+        let point1 = { lat: lastLocationCache.lat, lng: lastLocationCache.lng };
+        let point2 = { lat: curBooking.drop.lat, lng: curBooking.drop.lng };
+        fitMap(point1, point2, "call by timeout 247");
+        setlastCoords(lastLocationCache);
+      }, 6000);
+    }
     if (
       lastLocationCache &&
       curBooking &&
@@ -514,7 +506,7 @@ export default function BookedCabScreen(props) {
             {/* TODO: smart contract */}
             <Button
               title={t("complete_ride")}
-              loading={loading}
+              loading={false}
               titleStyle={{ color: colors.WHITE, fontWeight: "bold" }}
               onPress={() => {
                 if (curBooking.otp && appcat == "delivery") {
@@ -543,9 +535,8 @@ export default function BookedCabScreen(props) {
   const confirmDeliveryByDriver = async () => {
     setLoading(true);
     let alchemy = new ethers.providers.AlchemyProvider("maticmum", API_KEY);
-    const driver = connector.accounts[0];
     const ifacePOT = new ethers.utils.Interface(POT.abi);
-    const nonceDriver = await alchemy.getTransactionCount(driver);
+    const nonceDriver = await alchemy.getTransactionCount(driverAddress);
 
     const confirmDeliveryByDriver = ifacePOT.encodeFunctionData(
       "confirmDeliveryByDriver",
@@ -553,7 +544,7 @@ export default function BookedCabScreen(props) {
     );
 
     const txConfirmDeliveryByDriver = {
-      from: `${driver}`,
+      from: `${driverAddress}`,
       to: `${curBooking?.addressContract}`,
       data: confirmDeliveryByDriver,
       chainId: 80001,
@@ -561,19 +552,27 @@ export default function BookedCabScreen(props) {
     };
 
     try {
-      await connector
-        .sendTransaction(txConfirmDeliveryByDriver)
-        .then(async (res) => {
-          await alchemy
-            .waitForTransaction(res, 1)
-            .then((res) => {
-              return { res: "success" };
-            })
-            .catch((err) => {
-              console.log("err", err);
-            });
-          setLoading(false);
-        });
+      if (connectionMode === ConnectionMode.WALLETCONNECT) {
+        await connector
+          .sendTransaction(txConfirmDeliveryByDriver)
+          .then(async (res) => {
+            await alchemy
+              .waitForTransaction(res, 1)
+              .then((res) => {
+                return { res: "success" };
+              })
+              .catch((err) => {
+                console.log("err", err);
+              });
+            setLoading(false);
+          });
+      } else if (connectionMode === ConnectionMode.WEB3AUTH) {
+        const wallet = new ethers.Wallet(auth.info.profile.pkey, alchemy);
+        const tx = await wallet.sendTransaction(txConfirmDeliveryByDriver);
+        await tx.wait();
+        setLoading(false);
+        return { res: "success" };
+      }
     } catch (err) {
       console.log("err", err);
       setLoading(false);
@@ -587,6 +586,7 @@ export default function BookedCabScreen(props) {
     setLoading(true);
     let booking = { ...curBooking };
     booking.status = "REACHED";
+    if (!confirmByApp && !confirmByAppState) confirmByAppTx();
     let res = await confirmDeliveryByDriver();
     if (res?.err !== undefined) {
       console.log("response error", res?.err);

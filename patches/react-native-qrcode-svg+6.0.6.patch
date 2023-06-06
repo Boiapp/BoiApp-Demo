@@ -1,0 +1,13 @@
+diff --git a/node_modules/react-native-qrcode-svg/package.json b/node_modules/react-native-qrcode-svg/package.json
+index 0c3c64f..eadb91d 100644
+--- a/node_modules/react-native-qrcode-svg/package.json
++++ b/node_modules/react-native-qrcode-svg/package.json
+@@ -44,7 +44,7 @@
+   "peerDependencies": {
+     "react-native": ">=0.59.0",
+     "react": "*",
+-    "react-native-svg": "^9.6.4"
++    "react-native-svg": "13.4.0"
+   },
+   "dependencies": {
+     "prop-types": "^15.5.10",

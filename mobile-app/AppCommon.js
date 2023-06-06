@@ -9,7 +9,7 @@ import i18n from "i18n-js";
 import { colors } from "./src/common/theme";
 import GetPushToken from "./src/components/GetPushToken";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Audio } from "expo-av";
+import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from "expo-av";
 import moment from "moment/min/moment-with-locales";
 import { AuthLoadingScreen } from "./src/screens";
 import { useWalletConnect } from "@walletconnect/react-native-dapp";
@@ -130,10 +130,10 @@ export default function AppCommon({ children }) {
     Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
       staysActiveInBackground: true,
-      interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DUCK_OTHERS,
+      interruptionModeIOS: InterruptionModeIOS.DuckOthers,
       playsInSilentModeIOS: true,
       shouldDuckAndroid: true,
-      interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
+      interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
       playThroughEarpieceAndroid: false,
       useNativeControls: false,
     });
@@ -488,6 +488,7 @@ export default function AppCommon({ children }) {
           saveToken();
           fetchingToken.current = false;
           if (role === "rider") {
+            console.log("rider", auth);
             dispatch(api.monitorProfileChanges());
             dispatch(api.fetchDrivers());
             dispatch(api.fetchBookings(auth.info.uid, role));
@@ -529,6 +530,7 @@ export default function AppCommon({ children }) {
       let role = auth.info.profile.usertype;
       if (role == "driver" && authState.current == "rider") {
         authState.current = "driver";
+        console.log("fetching driver data");
         dispatch(api.fetchBookings(auth.info.uid, role));
         dispatch(api.fetchTasks());
       }

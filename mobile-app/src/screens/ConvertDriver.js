@@ -190,7 +190,8 @@ export default function ConvertDriver(props) {
 
   //upload cancel
   const cancelPhoto = () => {
-    setCapturedImage(null);
+    // setCapturedImage(null);
+    setLoading(false);
   };
 
   //register button press for validation
@@ -199,7 +200,8 @@ export default function ConvertDriver(props) {
       Alert.alert(t("alert"), t("proper_input_licenseimage"));
     } else {
       if (state.vehicleNumber.length > 1) {
-        setLoading(true);
+        // setLoading(true);
+        console.log("state", state);
         dispatch(
           updateProfile(auth.info, {
             ...state,

@@ -61,8 +61,8 @@ export default function DriverTrips(props) {
   const [pgsErr, setGpsErr] = useState(false);
   const connector = useWalletConnect();
   const [contractLoading, setContractLoading] = useState(false);
-  const connectionMode = auth.info.connectionMode;
-  const driverAddress = auth.info.profile.wallet;
+  const connectionMode = auth ? auth.info?.connectionMode : null;
+  const driverAddress = auth ? auth.info?.profile?.wallet : null;
 
   useEffect(() => {
     if (bookinglistdata.bookings) {
@@ -103,7 +103,7 @@ export default function DriverTrips(props) {
         }
       }
     }
-    let alchemy = new ethers.providers.AlchemyProvider("maticmum", API_KEY);
+    const alchemy = new ethers.providers.AlchemyProvider("maticmum", API_KEY);
     const ifacePOT = new ethers.utils.Interface(POT.abi);
     const startRide = ifacePOT.encodeFunctionData("startRideByDriver", [
       driverAddress,
@@ -839,7 +839,7 @@ export default function DriverTrips(props) {
                         onPress={() => {
                           onPressAccept(item);
                         }}
-                        loading={false}
+                        loading={contractLoading}
                         buttonStyle={{
                           backgroundColor: colors.BLUE,
                           width: height / 6,

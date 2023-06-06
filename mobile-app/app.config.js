@@ -69,4 +69,46 @@ export default {
       },
     },
   },
+  expo: {
+    name: AppConfig.app_name,
+    slug: AppConfig.app_name.replace(/ /g, "-").toLowerCase(),
+    version: AppConfig.ios_app_version,
+    android: {
+      package: AppConfig.app_identifier,
+      versionCode: AppConfig.android_app_version,
+      permissions: [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA_ROLL",
+        "FOREGROUND_SERVICE",
+        "ACCESS_BACKGROUND_LOCATION",
+      ],
+      googleServicesFile: "./google-services.json",
+      config: {
+        googleMaps: {
+          apiKey: GoogleMapApiConfig.android,
+        },
+      },
+    },
+    orientation: "portrait",
+    icon: "./assets/images/logo1024x1024.png",
+    splash: {
+      image: "./assets/images/splash.png",
+      resizeMode: "cover",
+      backgroundColor: "#ffffff",
+    },
+    updates: {
+      fallbackToCacheTimeout: 0,
+    },
+    assetBundlePatterns: ["**/*"],
+    scheme: AppConfig.app_name.replace(/ /g, "-").toLowerCase(),
+    extra: {
+      eas: {
+        projectId: "5cbe2bde-43f4-418c-9c65-369d88df836b",
+      },
+    },
+  },
 };

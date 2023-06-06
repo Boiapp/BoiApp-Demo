@@ -23,7 +23,7 @@ import RadioForm from "react-native-simple-radio-button";
 import { useSelector } from "react-redux";
 import { colors } from "../common/theme";
 import Background from "./Background";
-var { height } = Dimensions.get("window");
+var { height, width } = Dimensions.get("window");
 
 export default function RegistrationWeb3(props) {
   const connector = useWalletConnect();
@@ -311,7 +311,14 @@ export default function RegistrationWeb3(props) {
   };
 
   return (
-    <Background>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colors.BLUE,
+        height: height,
+        width: width,
+      }}
+    >
       <Header
         placement="right"
         backgroundColor={colors.TRANSPARENT}
@@ -339,7 +346,7 @@ export default function RegistrationWeb3(props) {
                 fontWeight: 700,
                 fontSize: 20,
                 textAlign: "center",
-                color: colors.WHITE,
+                color: colors.BLUE,
               }}
             >
               {t("createdProfile")}
@@ -388,7 +395,6 @@ export default function RegistrationWeb3(props) {
                   />
                 </View>
               )}
-
               {/* Wallet */}
               <Text style={styles.headerStyle}>{t("your_wallet")}</Text>
               <View style={styles.textInputContainerStyle}>
@@ -486,6 +492,7 @@ export default function RegistrationWeb3(props) {
                   style={styles.inputStyle}
                 />
               </View>
+
               {/* Select Client or Driver */}
               <Text style={styles.headerStyle}>{t("user_type")}</Text>
               <View
@@ -494,22 +501,45 @@ export default function RegistrationWeb3(props) {
                   { flexDirection: isRTL ? "row-reverse" : "row" },
                 ]}
               >
-                <RadioForm
-                  radio_props={radio_props}
-                  initial={role}
-                  formHorizontal={true}
-                  labelHorizontal={true}
-                  buttonColor={colors.BLUE}
-                  labelColor={colors.BLUE}
-                  labelStyle={isRTL ? { marginRight: 10 } : { marginRight: 10 }}
-                  selectedButtonColor={colors.BLUE}
-                  selectedLabelColor={colors.BLUE}
-                  onPress={(value) => {
+                <RNPickerSelect
+                  placeholder={{}}
+                  value={state.usertype}
+                  useNativeAndroidPickerStyle={false}
+                  style={{
+                    inputIOS: [
+                      styles.pickerStyle,
+                      {
+                        marginBottom: 20,
+                      },
+                    ],
+                    placeholder: {
+                      color: "#6382FC",
+                    },
+                    inputAndroid: [
+                      styles.pickerStyle,
+                      {
+                        marginBottom: 20,
+                      },
+                    ],
+                  }}
+                  onValueChange={(value) => {
                     setRole(value);
                     setUserType(value);
                   }}
+                  items={radio_props}
+                  Icon={() => {
+                    return (
+                      <Ionicons
+                        style={{ top: 7, marginRight: isRTL ? "80%" : "0%" }}
+                        name="md-arrow-down"
+                        size={24}
+                        color="#6382FC"
+                      />
+                    );
+                  }}
                 />
               </View>
+
               {state.usertype == "driver" && (
                 <View
                   style={[
@@ -539,10 +569,10 @@ export default function RegistrationWeb3(props) {
                       Icon={() => {
                         return (
                           <Ionicons
-                            style={{ top: 15, marginRight: isRTL ? "80%" : 0 }}
+                            style={{ top: 7, marginRight: isRTL ? "80%" : 0 }}
                             name="md-arrow-down"
                             size={24}
-                            color="gray"
+                            color="#6382FC"
                           />
                         );
                       }}
@@ -822,6 +852,7 @@ export default function RegistrationWeb3(props) {
                     </View>
                   </View>
                 ))}
+
               <View style={styles.buttonContainer}>
                 <Button
                   onPress={killSession}
@@ -856,7 +887,7 @@ export default function RegistrationWeb3(props) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </Background>
+    </View>
   );
 }
 
@@ -932,7 +963,6 @@ const styles = {
     width: 200,
     fontSize: 15,
     height: 40,
-    marginTop: 8,
     borderBottomWidth: 1,
     borderBottomColor: colors.BLUE,
     textAlign: "center",

@@ -1,4 +1,6 @@
 import base64 from "react-native-base64";
+const username = "exilog";
+const password = "dWLF&%jn7PpEc2d";
 
 export const fetchPlacesAutocomplete = (searchKeyword) => (firebase) => {
   return new Promise((resolve, reject) => {
@@ -106,19 +108,25 @@ export const getDistanceMatrix = (startLoc, destLoc) => (firebase) => {
       }),
     })
       .then((response) => {
-        return response.json();
+        const responseJson = response.json();
+        console.log("response", responseJson);
+        return responseJson;
       })
       .then((json) => {
         if (json.error) {
+          console.log("error 116", json.error);
           reject(json.error);
         } else {
+          console.log("json", json);
           resolve(json);
         }
       })
       .catch((error) => {
+        console.log("error 124", error);
         reject("getDistanceMatrix Call Error", error);
       });
   }).catch((error) => {
+    console.log(error);
     reject("getDistanceMatrix Call Error", error);
   });
 };

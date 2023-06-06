@@ -135,6 +135,7 @@ const FirebaseProvider = ({ config, appcat, children, AsyncStorage }) => {
       });
   const database = getDatabase(app);
   const storage = getStorage(app);
+
   firebase = {
     app: app,
     config: config,

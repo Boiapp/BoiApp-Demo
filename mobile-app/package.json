@@ -34,7 +34,7 @@
     "buffer": "6.0.3",
     "common": "1.0.0",
     "crypto-browserify": "^3.12.0",
-    "deprecated-react-native-prop-types": "^4.0.0",
+    "deprecated-react-native-prop-types": "^4.1.0",
     "dotenv": "16.0.3",
     "ethers": "5.7.2",
     "expo": "^48.0.0",
@@ -86,7 +86,7 @@
     "react-native-picker-select": "8.0.4",
     "react-native-qrcode-svg": "6.0.6",
     "react-native-quick-base64": "2.0.5",
-    "react-native-quick-crypto": "0.4.6",
+    "react-native-quick-crypto": "0.6.1",
     "react-native-randombytes": "3.6.1",
     "react-native-reanimated": "~2.14.4",
     "react-native-root-toast": "^3.4.1",
@@ -95,7 +95,7 @@
     "react-native-segmented-control-tab": "4.0.0",
     "react-native-simple-radio-button": "2.7.4",
     "react-native-star-rating": "1.1.0",
-    "react-native-svg": "^13.4.0",
+    "react-native-svg": "13.4.0",
     "react-native-tcp": "4.0.0",
     "react-native-vector-icons": "9.0.0",
     "react-native-web": "~0.18.11",
@@ -140,8 +140,5 @@
     "ts-node": "^10.9.1",
     "typechain": "^8.1.0",
     "typescript": "^4.9.4"
-  },
-  "resolutions": {
-    "ethereumjs-abi": "https://registry.npmjs.org/ethereumjs-abi/-/ethereumjs-abi-0.6.8.tgz"
   }
 }

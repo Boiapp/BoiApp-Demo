@@ -1,0 +1,13 @@
+diff --git a/node_modules/react-qr-code/package.json b/node_modules/react-qr-code/package.json
+index 119bc73..6c1e70a 100644
+--- a/node_modules/react-qr-code/package.json
++++ b/node_modules/react-qr-code/package.json
+@@ -43,7 +43,7 @@
+   },
+   "peerDependencies": {
+     "react": "^16.x || ^17.x || ^18.x",
+-    "react-native-svg": "*"
++    "react-native-svg": "13.4.0"
+   },
+   "peerDependenciesMeta": {
+     "react-native-svg": {
