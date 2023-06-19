@@ -31,7 +31,6 @@ import BookingModal from "../components/BookingModal";
 import MapView, { PROVIDER_GOOGLE, Marker } from "react-native-maps";
 import { DrawerActions, useIsFocused } from "@react-navigation/native";
 import { mapStyle } from "../../config/mapStyle";
-import { useWalletConnect } from "@walletconnect/react-native-dapp";
 import "react-native-get-random-values";
 import "@ethersproject/shims";
 import { ethers, utils } from "ethers";
@@ -40,6 +39,7 @@ import Token from "../../artifacts/contracts/BOI.sol/Boi.json";
 import { API_KEY } from "@env";
 import { ConnectionMode } from "../types/types";
 import useInterval from "../hooks/useInterval";
+import { useWeb3Modal } from "@web3modal/react-native";
 
 const hasNotch =
   Platform.OS === "ios" &&
@@ -95,39 +95,14 @@ export default function MapScreen(props) {
   const isFocused = useIsFocused();
 
   /* Web3 */
-  const connector = useWalletConnect();
+  const { provider, isConnected } = useWeb3Modal();
   const tokenAddress = "0xC7932824AdF77761CaB1988e6B886eEe90D35666";
 
   let addressNewPOT = null;
-  const [addressContract, setAddressContract] = useState("");
 
   const createNewContract = async () => {
     setContractLoading(true);
-    if (
-      connectionMode === ConnectionMode.WALLETCONNECT &&
-      connector.chainId !== 80001
-    ) {
-      try {
-        await connector.sendCustomRequest({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: "0x13881" }],
-        });
-      } catch (err) {
-        try {
-          await connector.sendCustomRequest({
-            method: "wallet_addEthereumChain",
-            params: [
-              {
-                chainId: "0x13881",
-                chainName: "MUMBAI",
-                rpcUrls: ["https://rpc-mumbai.matic.today"],
-              },
-            ],
-          });
-        } catch (err) {
-          console.log("err", err);
-        }
-      }
+    if (connectionMode === ConnectionMode.WALLETCONNECT || isConnected) {
       const value = Number(estimatedata.estimate.fareCost);
       let res = await dispatch(createNewPOT(passenger, value));
 
@@ -162,28 +137,30 @@ export default function MapScreen(props) {
       chainId: 80001,
       gasPrice: gasPrice._hex,
     };
-
+    let result;
     try {
-      if (connectionMode === ConnectionMode.WALLETCONNECT) {
-        await connector.sendTransaction(txApprove).then(async (res) => {
-          await alchemy
-            .waitForTransaction(res, 1)
-            .then((res) => {
-              return { res: "success" };
-            })
-            .catch((err) => {
-              console.log("err", err);
+      if (connectionMode === ConnectionMode.WALLETCONNECT || isConnected) {
+        await provider
+          .request({
+            method: "eth_sendTransaction",
+            params: [txApprove],
+          })
+          .then(async (res) => {
+            await alchemy.waitForTransaction(res, 1).then(() => {
+              result = { res: "success" };
+              return result;
             });
-        });
+          });
       } else if (connectionMode === ConnectionMode.WEB3AUTH) {
         const wallet = new ethers.Wallet(auth.info.profile.pkey, alchemy);
         const tx = await wallet.sendTransaction(txApprove);
         await tx.wait();
-        return { res: "success" };
+        result = { res: "success" };
       }
+      return result;
     } catch (err) {
       console.log("err", err);
-      return { err };
+      throw new Error(err);
     }
   };
 
@@ -206,34 +183,33 @@ export default function MapScreen(props) {
       gasPrice: gasPrice._hex,
       nonce: noncePassenger,
     };
-
+    let result;
     try {
-      if (connectionMode === ConnectionMode.WALLETCONNECT) {
-        await connector.sendTransaction(txPaymentPOT).then(async (res) => {
-          await alchemy
-            .waitForTransaction(res, 1)
-            .then((res) => {
-              return { res: "success" };
-            })
-            .catch((err) => {
-              console.log("err", err);
+      if (connectionMode === ConnectionMode.WALLETCONNECT || isConnected) {
+        await provider
+          .request({
+            method: "eth_sendTransaction",
+            params: [txPaymentPOT],
+          })
+          .then(async (res) => {
+            await alchemy.waitForTransaction(res, 1).then(() => {
+              result = { res: "success" };
+              return result;
             });
-          setContractLoading(false);
-        });
+          });
       } else if (connectionMode === ConnectionMode.WEB3AUTH) {
         const wallet = new ethers.Wallet(auth.info.profile.pkey, alchemy);
         const tx = await wallet.sendTransaction(txPaymentPOT);
         await tx.wait();
-        console.log("tx", tx);
         setContractLoading(false);
-        return { res: "success" };
+        result = { res: "success" };
+        return result;
       }
+      return result;
     } catch (err) {
       setContractLoading(false);
-      return { err };
+      throw new Error(err);
     }
-    setContractLoading(false);
-    return;
   };
 
   /* Web3 */
@@ -478,6 +454,7 @@ export default function MapScreen(props) {
 
   const locateUser = async () => {
     dispatch(fetchDrivers());
+    callGetDrivers();
     if (tripdata.selected == "pickup") {
       let tempWatcher = await Location.watchPositionAsync(
         {
@@ -1079,32 +1056,37 @@ export default function MapScreen(props) {
     } else {
       const AddressNewPOT = await createNewContract();
       console.log("AddressNewPOT", AddressNewPOT);
-      const resApprove = await approveContract(AddressNewPOT);
-      if (resApprove?.err !== undefined) {
-        return;
-      }
-      let resPayment = await paymentByPassenger(AddressNewPOT);
-      if (resPayment?.err !== undefined) {
-        return;
-      }
-      const addBookingObj = {
-        pickup: estimatedata.estimate.pickup,
-        drop: estimatedata.estimate.drop,
-        carDetails: estimatedata.estimate.carDetails,
-        userDetails: auth.info,
-        estimate: estimatedata.estimate,
-        tripdate: bookingType
-          ? new Date(bookingDate).getTime()
-          : new Date().getTime(),
-        bookLater: bookingType,
-        settings: settings,
-        booking_type_admin: false,
-        addressContract: addressNewPOT,
-      };
-      dispatch(addBooking(addBookingObj));
-      dispatch(clearTripPoints());
-      setBookingModalStatus(false);
-      resetCars();
+      await approveContract(AddressNewPOT)
+        .then(async (res) => {
+          console.log("approveContract", res);
+          if (res?.err !== undefined) {
+            return;
+          }
+          await paymentByPassenger(AddressNewPOT).then(async (res) => {
+            console.log("paymentByPassenger", res);
+            const addBookingObj = {
+              pickup: estimatedata.estimate.pickup,
+              drop: estimatedata.estimate.drop,
+              carDetails: estimatedata.estimate.carDetails,
+              userDetails: auth.info,
+              estimate: estimatedata.estimate,
+              tripdate: bookingType
+                ? new Date(bookingDate).getTime()
+                : new Date().getTime(),
+              bookLater: bookingType,
+              settings: settings,
+              booking_type_admin: false,
+              addressContract: AddressNewPOT,
+            };
+            dispatch(addBooking(addBookingObj));
+            dispatch(clearTripPoints());
+            setBookingModalStatus(false);
+            resetCars();
+          });
+        })
+        .catch((err) => {
+          console.log("err", err);
+        });
     }
   };
 

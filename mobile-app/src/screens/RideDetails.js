@@ -245,59 +245,6 @@ export default function RideDetails(props) {
               </View>
             </View>
           ) : null}
-
-          <View
-            style={[
-              styles.userDesc,
-              { flexDirection: isRTL ? "row-reverse" : "row" },
-            ]}
-          >
-            <Avatar
-              size="small"
-              source={
-                Platform.OS == "ios"
-                  ? require("../../assets/images/fareMetar.jpg")
-                  : require("../../assets/images/fareMetar.jpg")
-              }
-              activeOpacity={0.7}
-            />
-            <View
-              style={[
-                styles.userView,
-                isRTL ? { paddingRight: 28 } : { paddingLeft: 28 },
-              ]}
-            >
-              {settings.swipe_symbol === false ? (
-                <Text
-                  style={[
-                    styles.textStyle,
-                    { textAlign: isRTL ? "right" : "left" },
-                  ]}
-                >
-                  {settings.symbol}
-                  {paramData && paramData.estimate
-                    ? parseFloat(paramData.estimate).toFixed(settings.decimal)
-                    : paramData && paramData.estimate
-                    ? paramData.estimate
-                    : 0}
-                </Text>
-              ) : (
-                <Text
-                  style={[
-                    styles.textStyle,
-                    { textAlign: isRTL ? "right" : "left" },
-                  ]}
-                >
-                  {paramData && paramData.estimate
-                    ? parseFloat(paramData.estimate).toFixed(settings.decimal)
-                    : paramData && paramData.estimate
-                    ? paramData.estimate
-                    : 0}
-                  {settings.symbol}
-                </Text>
-              )}
-            </View>
-          </View>
         </View>
         <View>
           <View
@@ -414,7 +361,7 @@ export default function RideDetails(props) {
                     { textAlign: isRTL ? "right" : "left" },
                   ]}
                 >
-                  {t("your_trip")}
+                  Precio total del viaje
                 </Text>
                 {settings.swipe_symbol === false ? (
                   <Text
@@ -437,12 +384,14 @@ export default function RideDetails(props) {
                       { textAlign: isRTL ? "right" : "left" },
                     ]}
                   >
+                    {settings.symbol}
                     {paramData && paramData.estimate > 0
-                      ? parseFloat(paramData.estimate).toFixed(settings.decimal)
+                      ? parseFloat(paramData.estimate).toLocaleString("es-Ar", {
+                          minimumFractionDigits: 2,
+                        })
                       : paramData && paramData.estimate
                       ? parseFloat(paramData.estimate).toFixed(settings.decimal)
                       : 0}{" "}
-                    {settings.symbol}
                   </Text>
                 )}
               </View>
@@ -460,15 +409,7 @@ export default function RideDetails(props) {
                       { textAlign: isRTL ? "right" : "left" },
                     ]}
                   >
-                    {t("discount")}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.taxColor,
-                      { textAlign: isRTL ? "right" : "left" },
-                    ]}
-                  >
-                    {t("promo_apply")}
+                    Comisión (10%)
                   </Text>
                 </View>
                 {settings.swipe_symbol === false ? (
@@ -495,13 +436,22 @@ export default function RideDetails(props) {
                     ]}
                   >
                     {" "}
-                    {isRTL ? null : "-"}{" "}
-                    {paramData && paramData.discount_amount
+                    {isRTL ? null : "-"} {settings.symbol}
+                    {/* {paramData && paramData.discount_amount
                       ? parseFloat(paramData.discount_amount).toFixed(
                           settings.decimal
                         )
-                      : 0}{" "}
-                    {settings.symbol} {isRTL ? "-" : null}
+                      : 0}{" "} */}
+                    {paramData &&
+                      paramData.estimate &&
+                      (
+                        Number(
+                          (Math.abs(paramData.estimate) * 0.1).toPrecision(15)
+                        ).toLocaleString("es-Ar", {
+                          minimumFractionDigits: 2,
+                        }) + ""
+                      ).slice(0, 5)}
+                    {isRTL ? "-" : null}
                   </Text>
                 )}
               </View>
@@ -543,43 +493,6 @@ export default function RideDetails(props) {
                   </View>
                 ) : null
               ) : null}
-              {/* {paramData && paramData.cashPaymentAmount ? (
-                paramData.cashPaymentAmount > 0 ? (
-                  <View
-                    style={[
-                      styles.billItem,
-                      { flexDirection: isRTL ? "row-reverse" : "row" },
-                    ]}
-                  >
-                    <View>
-                      <Text style={{ textAlign: isRTL ? "right" : "left" }}>
-                        {t("CashPaymentAmount")}
-                      </Text>
-                    </View>
-                    {settings.swipe_symbol === false ? (
-                      <Text style={{ textAlign: isRTL ? "right" : "left" }}>
-                        {" "}
-                        {settings.symbol}
-                        {paramData && paramData.cashPaymentAmount
-                          ? parseFloat(paramData.cashPaymentAmount).toFixed(
-                              settings.decimal
-                            )
-                          : 0}
-                      </Text>
-                    ) : (
-                      <Text style={{ textAlign: isRTL ? "right" : "left" }}>
-                        {" "}
-                        {paramData && paramData.cashPaymentAmount
-                          ? parseFloat(paramData.cashPaymentAmount).toFixed(
-                              settings.decimal
-                            )
-                          : 0}
-                        {settings.symbol}
-                      </Text>
-                    )}
-                  </View>
-                ) : null
-              ) : null} */}
               {paramData && paramData.usedWalletMoney ? (
                 paramData.usedWalletMoney > 0 ? (
                   <View
@@ -630,7 +543,7 @@ export default function RideDetails(props) {
                   { textAlign: isRTL ? "right" : "left" },
                 ]}
               >
-                {t("Customer_paid")}
+                Valor final recibido
               </Text>
               {settings.swipe_symbol === false ? (
                 <Text
@@ -651,10 +564,14 @@ export default function RideDetails(props) {
                     { textAlign: isRTL ? "right" : "left" },
                   ]}
                 >
-                  {paramData && paramData.estimate
-                    ? parseFloat(paramData.estimate).toFixed(settings.decimal)
-                    : null}
                   {settings.symbol}
+                  {paramData && paramData.estimate
+                    ? Number(
+                        (Math.abs(paramData.estimate) * 0.9).toPrecision(15)
+                      ).toLocaleString("es-Ar", {
+                        minimumFractionDigits: 2,
+                      })
+                    : null}
                 </Text>
               )}
             </View>
@@ -710,7 +627,7 @@ export default function RideDetails(props) {
                     {t(paramData.status)}
                   </Text>
                 </View>
-                {["PAID", "COMPLETE"].indexOf(paramData.status) != -1 ? (
+                {/* {["PAID", "COMPLETE"].indexOf(paramData.status) != -1 ? (
                   <View
                     style={[
                       styles.billItem,
@@ -737,7 +654,7 @@ export default function RideDetails(props) {
                       {paramData.gateway ? "(" + paramData.gateway + ")" : null}
                     </Text>
                   </View>
-                ) : null}
+                ) : null} */}
                 {["PAID", "COMPLETE"].indexOf(paramData.status) != -1 ? (
                   <View
                     style={[

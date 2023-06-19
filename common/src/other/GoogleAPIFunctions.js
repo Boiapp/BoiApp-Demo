@@ -95,7 +95,6 @@ export const fetchAddressfromCoords = (latlng) => (firebase) => {
 export const getDistanceMatrix = (startLoc, destLoc) => (firebase) => {
   return new Promise((resolve, reject) => {
     const { config } = firebase;
-    console.log("startLoc", startLoc);
     fetch(`https://${config.project}.web.app/googleapis-getdistancematrix`, {
       method: "POST",
       headers: {
@@ -109,7 +108,6 @@ export const getDistanceMatrix = (startLoc, destLoc) => (firebase) => {
     })
       .then((response) => {
         const responseJson = response.json();
-        console.log("response", responseJson);
         return responseJson;
       })
       .then((json) => {
@@ -117,7 +115,6 @@ export const getDistanceMatrix = (startLoc, destLoc) => (firebase) => {
           console.log("error 116", json.error);
           reject(json.error);
         } else {
-          console.log("json", json);
           resolve(json);
         }
       })

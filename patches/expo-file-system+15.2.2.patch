@@ -1,0 +1,13 @@
+diff --git a/node_modules/expo-file-system/android/build.gradle b/node_modules/expo-file-system/android/build.gradle
+index aa01f16..01868be 100644
+--- a/node_modules/expo-file-system/android/build.gradle
++++ b/node_modules/expo-file-system/android/build.gradle
+@@ -31,7 +31,7 @@ buildscript {
+   }
+ 
+   dependencies {
+-    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${getKotlinVersion()}")
++    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.10")
+   }
+ }
+ 

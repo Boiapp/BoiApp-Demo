@@ -17,12 +17,10 @@ import i18n from "i18n-js";
 var { height } = Dimensions.get("window");
 import { useSelector, useDispatch } from "react-redux";
 import { FirebaseContext } from "common/src";
-import { useWalletConnect } from "@walletconnect/react-native-dapp";
 
 export default function EditProfilePage(props) {
   const { api } = useContext(FirebaseContext);
   const { updateProfile } = api;
-  const connector = useWalletConnect();
   const dispatch = useDispatch();
   const auth = useSelector((state) => state.auth);
   const [profileData, setProfileData] = useState(null);

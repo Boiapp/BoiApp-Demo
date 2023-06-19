@@ -1,4 +1,4 @@
-import { useWalletConnect } from "@walletconnect/react-native-dapp";
+import { useWeb3Modal } from "@web3modal/react-native";
 import { FirebaseContext } from "common/src";
 import i18n from "i18n-js";
 import React, { useCallback, useContext, useState } from "react";
@@ -37,7 +37,7 @@ export default function SideMenu(props) {
   const isRTL =
     i18n.locale.indexOf("he") === 0 || i18n.locale.indexOf("ar") === 0;
 
-  const connector = useWalletConnect();
+  const { address, isConnected, provider } = useWeb3Modal();
 
   const sideMenuList = [
     {
@@ -124,7 +124,9 @@ export default function SideMenu(props) {
     auth.info.profile && auth.info.profile.driverActiveStatus
       ? dispatch(updateProfile(auth.info, { driverActiveStatus: false }))
       : null;
-    connector.killSession();
+    if (isConnected) {
+      provider.disconnect();
+    }
     dispatch(signOut());
   };
 

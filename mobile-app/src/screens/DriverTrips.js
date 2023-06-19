@@ -1,7 +1,6 @@
 import { API_KEY } from "@env";
 import { useDrawerStatus } from "@react-navigation/drawer";
 import { DrawerActions } from "@react-navigation/native";
-import { useWalletConnect } from "@walletconnect/react-native-dapp";
 import { FirebaseContext } from "common/src";
 import { ethers } from "ethers";
 import i18n from "i18n-js";
@@ -36,6 +35,7 @@ import { mapStyle } from "../../config/mapStyle";
 import { colors } from "../common/theme";
 import { AnimatedMapView } from "react-native-maps/lib/MapView";
 import { ConnectionMode } from "../types/types";
+import { useWeb3Modal } from "@web3modal/react-native";
 
 var { width, height } = Dimensions.get("window");
 
@@ -59,7 +59,7 @@ export default function DriverTrips(props) {
     i18n.locale.indexOf("he") === 0 || i18n.locale.indexOf("ar") === 0;
   const isDrawerOpen = useDrawerStatus();
   const [pgsErr, setGpsErr] = useState(false);
-  const connector = useWalletConnect();
+  const { provider, isConnected } = useWeb3Modal();
   const [contractLoading, setContractLoading] = useState(false);
   const connectionMode = auth ? auth.info?.connectionMode : null;
   const driverAddress = auth ? auth.info?.profile?.wallet : null;
@@ -80,29 +80,6 @@ export default function DriverTrips(props) {
 
   const DriverPOT = async (address) => {
     setContractLoading(true);
-    if (connector.chainId !== 80001) {
-      try {
-        await connector.sendCustomRequest({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: "0x13881" }],
-        });
-      } catch (err) {
-        try {
-          await connector.sendCustomRequest({
-            method: "wallet_addEthereumChain",
-            params: [
-              {
-                chainId: "0x13881",
-                chainName: "MUMBAI",
-                rpcUrls: ["https://rpc-mumbai.matic.today"],
-              },
-            ],
-          });
-        } catch (err) {
-          console.log("err", err);
-        }
-      }
-    }
     const alchemy = new ethers.providers.AlchemyProvider("maticmum", API_KEY);
     const ifacePOT = new ethers.utils.Interface(POT.abi);
     const startRide = ifacePOT.encodeFunctionData("startRideByDriver", [
@@ -116,34 +93,41 @@ export default function DriverTrips(props) {
       nonce: nonceDriver,
       chainId: 80001,
     };
+    let result;
     try {
-      if (connectionMode === ConnectionMode.WALLETCONNECT) {
-        await connector.sendTransaction(txPOT).then(async (res) => {
-          await alchemy
-            .waitForTransaction(res, 1)
-            .then((res) => {
-              setContractLoading(false);
-              return { res: "success" };
-            })
-            .catch((err) => {
-              setContractLoading(false);
-              console.log("err", err);
-            });
-        });
+      if (connectionMode === ConnectionMode.WALLETCONNECT || isConnected) {
+        await provider
+          .request({
+            method: "eth_sendTransaction",
+            params: [txPOT],
+          })
+          .then(async (res) => {
+            await alchemy
+              .waitForTransaction(res, 1)
+              .then((res) => {
+                setContractLoading(false);
+                result = { res: "success" };
+              })
+              .catch((err) => {
+                setContractLoading(false);
+                console.log("err", err);
+              });
+          });
       } else if (connectionMode === ConnectionMode.WEB3AUTH) {
         const wallet = new ethers.Wallet(auth.info.profile.pkey, alchemy);
         const tx = await wallet.sendTransaction(txPOT);
         await tx.wait();
         setContractLoading(false);
-        return { res: "success" };
+        result = { res: "success" };
       }
     } catch (err) {
       console.log("err", err);
       setContractLoading(false);
-      return { err: err };
+      result = { res: "error" };
+      throw new Error(err);
     }
     setContractLoading(false);
-    return { res: "success" };
+    return result;
   };
 
   /* Deploy Contract */
@@ -176,16 +160,19 @@ export default function DriverTrips(props) {
         Alert.alert(t("alert"), t("wallet_balance_low"));
       }
     } else {
-      let res = await DriverPOT(item.addressContract);
-      if (res.err !== undefined) {
-        return;
-      }
-      dispatch(acceptTask(auth.info, item));
-      setSelectedItem(null);
-      setModalVisible(null);
-      setTimeout(() => {
-        props.navigation.navigate("BookedCab", { bookingId: item.id });
-      }, 3000);
+      await DriverPOT(item.addressContract)
+        .then(() => {
+          dispatch(acceptTask(auth.info, item));
+          setSelectedItem(null);
+          setModalVisible(null);
+          setTimeout(() => {
+            props.navigation.navigate("BookedCab", { bookingId: item.id });
+          }, 3000);
+        })
+        .catch((err) => {
+          console.log("err", err);
+          Alert.alert(t("alert"), "Ha ocurrido un error, intente de nuevo.");
+        });
     }
   };
 
@@ -821,6 +808,7 @@ export default function DriverTrips(props) {
                           setModalVisible(true);
                           setSelectedItem(item);
                         }}
+                        loading={contractLoading}
                         title={t("ignore_text")}
                         titleStyle={styles.titleStyles}
                         buttonStyle={styles.myButtonStyle}

@@ -24,11 +24,10 @@ import { useSelector, useDispatch } from "react-redux";
 import { FirebaseContext } from "common/src";
 import StarRating from "react-native-star-rating";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import RNPickerSelect from "react-native-picker-select";
+import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
 import moment from "moment/min/moment-with-locales";
 import { DrawerActions } from "@react-navigation/native";
-import { useWalletConnect } from "@walletconnect/react-native-dapp";
 
 export default function ProfileScreen(props) {
   const { t } = i18n;
@@ -40,7 +39,6 @@ export default function ProfileScreen(props) {
   const settings = useSelector((state) => state.settingsdata.settings);
   const [profileData, setProfileData] = useState(null);
   const [loader, setLoader] = useState(false);
-  const connector = useWalletConnect();
 
   const actionSheetRef = useRef(null);
 
@@ -225,17 +223,9 @@ export default function ProfileScreen(props) {
       <View style={{ flexDirection: "row", height: 30, alignItems: "center" }}>
         <Text style={{ color: colors.WHITE }}>Lang:</Text>
         {langSelection ? (
-          <RNPickerSelect
-            placeholder={{}}
-            value={langSelection}
-            useNativeAndroidPickerStyle={false}
-            style={{
-              inputIOS: styles.pickerStyle,
-              inputAndroid: styles.pickerStyle1,
-              placeholder: {
-                color: colors.WHITE,
-              },
-            }}
+          <Picker
+            selectedValue={langSelection}
+            style={styles.pickerStyle}
             onValueChange={(text) => {
               let defl = null;
               for (const value of Object.values(languagedata.langlist)) {
@@ -260,21 +250,17 @@ export default function ProfileScreen(props) {
                 })
               );
             }}
-            label={"Language"}
-            items={Object.values(languagedata.langlist).map(function (value) {
-              return { label: value.langName, value: value.langLocale };
-            })}
-            Icon={() => {
+          >
+            {Object.values(languagedata.langlist).map(function (value) {
               return (
-                <Ionicons
-                  style={{ marginTop: 2 }}
-                  name="md-arrow-down"
-                  size={20}
-                  color="white"
+                <Picker.Item
+                  label={value.langName}
+                  value={value.langLocale}
+                  key={value.langLocale}
                 />
               );
-            }}
-          />
+            })}
+          </Picker>
         ) : null}
       </View>
     ) : null;

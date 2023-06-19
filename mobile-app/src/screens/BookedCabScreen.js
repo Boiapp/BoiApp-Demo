@@ -44,7 +44,6 @@ import * as ImagePicker from "expo-image-picker";
 import moment from "moment/min/moment-with-locales";
 import { mapStyle } from "../../config/mapStyle";
 import POT from "../../artifacts/contracts/POT.sol/POT.json";
-import { useWalletConnect } from "@walletconnect/react-native-dapp";
 import { ethers } from "ethers";
 import {
   PRIVATE_KEY_ARBITROR,
@@ -56,6 +55,7 @@ import { AnimatedMapView } from "react-native-maps/lib/MapView";
 import useInterval from "../hooks/useInterval";
 import { useIsFocused } from "@react-navigation/native";
 import { ConnectionMode } from "../types/types";
+import { useWeb3Modal } from "@web3modal/react-native";
 
 export default function BookedCabScreen(props) {
   const { api, appcat } = useContext(FirebaseContext);
@@ -140,7 +140,6 @@ export default function BookedCabScreen(props) {
           curBooking?.drop?.lng
         );
         if (dist && dist <= 0.08) {
-          console.log("Confirming delivery by app");
           const res = await dispatch(
             confirmDeliveryByApp(curBooking?.addressContract)
           );
@@ -156,7 +155,7 @@ export default function BookedCabScreen(props) {
   useInterval(confirmByAppTx, 50000);
 
   /* INTERACTION SMART CONTRACT */
-  const connector = useWalletConnect();
+  const { provider, isConnected } = useWeb3Modal();
 
   useEffect(() => {
     const diff = 0.003; //(aproximadamente 0.003 grados representa alrededor de 300 metros)
@@ -238,7 +237,7 @@ export default function BookedCabScreen(props) {
         let point2 = { lat: curBooking.drop.lat, lng: curBooking.drop.lng };
         fitMap(point1, point2, "call by timeout 247");
         setlastCoords(lastLocationCache);
-      }, 6000);
+      }, 5000);
     }
     if (
       lastLocationCache &&
@@ -530,7 +529,6 @@ export default function BookedCabScreen(props) {
     booking.status = "STARTED";
     dispatch(updateBooking(booking));
   };
-
   /* Change Status in Smart contract */
   const confirmDeliveryByDriver = async () => {
     setLoading(true);
@@ -551,42 +549,50 @@ export default function BookedCabScreen(props) {
       nonce: nonceDriver,
     };
 
+    let result;
     try {
-      if (connectionMode === ConnectionMode.WALLETCONNECT) {
-        await connector
-          .sendTransaction(txConfirmDeliveryByDriver)
+      if (connectionMode === ConnectionMode.WALLETCONNECT || isConnected) {
+        await provider
+          .request({
+            method: "eth_sendTransaction",
+            params: [txConfirmDeliveryByDriver],
+          })
           .then(async (res) => {
             await alchemy
               .waitForTransaction(res, 1)
               .then((res) => {
-                return { res: "success" };
+                result = { res: "success" };
+                return result;
               })
               .catch((err) => {
                 console.log("err", err);
               });
             setLoading(false);
           });
+        return result;
       } else if (connectionMode === ConnectionMode.WEB3AUTH) {
         const wallet = new ethers.Wallet(auth.info.profile.pkey, alchemy);
         const tx = await wallet.sendTransaction(txConfirmDeliveryByDriver);
         await tx.wait();
         setLoading(false);
-        return { res: "success" };
+        result = { res: "success" };
+        return result;
       }
+      return result;
     } catch (err) {
       console.log("err", err);
       setLoading(false);
       return { err };
     }
-    setLoading(false);
-    return;
   };
 
   const endBooking = async () => {
     setLoading(true);
     let booking = { ...curBooking };
     booking.status = "REACHED";
-    if (!confirmByApp && !confirmByAppState) confirmByAppTx();
+    if (!confirmByApp && !confirmByAppState) {
+      await confirmByAppTx();
+    }
     let res = await confirmDeliveryByDriver();
     if (res?.err !== undefined) {
       console.log("response error", res?.err);

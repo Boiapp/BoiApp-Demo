@@ -1,0 +1,12 @@
+diff --git a/node_modules/crypto-browserify/index.js b/node_modules/crypto-browserify/index.js
+index b6d4d24..855b3c7 100644
+--- a/node_modules/crypto-browserify/index.js
++++ b/node_modules/crypto-browserify/index.js
+@@ -1,6 +1,6 @@
+ 'use strict'
+ 
+-exports.randomBytes = exports.rng = exports.pseudoRandomBytes = exports.prng = require('randombytes')
++exports.randomBytes = exports.rng = exports.pseudoRandomBytes = exports.prng = require('expo-crypto').getRandomBytes
+ exports.createHash = exports.Hash = require('create-hash')
+ exports.createHmac = exports.Hmac = require('create-hmac')
+ 

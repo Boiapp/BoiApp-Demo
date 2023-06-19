@@ -15,7 +15,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { Icon, Button, Header, Input } from "react-native-elements";
-import RNPickerSelect from "react-native-picker-select";
+import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
 import { FirebaseContext } from "common/src";
 import { DrawerActions } from "@react-navigation/native";
@@ -284,10 +284,8 @@ export default function ConvertDriver(props) {
                   className="flex items-center justify-center align-middle w-full"
                 >
                   <Text style={styles.headerTextStyle}>{t("typeofCar")}</Text>
-                  <RNPickerSelect
-                    placeholder={{}}
-                    value={state.carType}
-                    useNativeAndroidPickerStyle={false}
+                  <Picker
+                    selectedValue={state.carType}
                     style={{
                       inputIOS: [styles.pickerStyle],
                       placeholder: {
@@ -298,7 +296,6 @@ export default function ConvertDriver(props) {
                     onValueChange={(value) =>
                       setState({ ...state, carType: value })
                     }
-                    items={carTypes}
                     Icon={() => {
                       return (
                         <Ionicons
@@ -312,7 +309,17 @@ export default function ConvertDriver(props) {
                         />
                       );
                     }}
-                  />
+                  >
+                    {carTypes.map((item, index) => {
+                      return (
+                        <Picker.Item
+                          key={index}
+                          label={item.name}
+                          value={item.name}
+                        />
+                      );
+                    })}
+                  </Picker>
                 </View>
               )}
               <View

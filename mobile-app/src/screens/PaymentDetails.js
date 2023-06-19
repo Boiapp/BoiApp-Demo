@@ -9,14 +9,17 @@ import {
   TouchableWithoutFeedback,
   Modal,
   Alert,
+  KeyboardAvoidingView,
+  Pressable,
 } from "react-native";
-import { Header, CheckBox } from "react-native-elements";
+import { Header, CheckBox, Icon } from "react-native-elements";
 import { colors } from "../common/theme";
 var { width, height } = Dimensions.get("window");
 import { PromoComp } from "../components";
 import i18n from "i18n-js";
 import { useSelector, useDispatch } from "react-redux";
 import { FirebaseContext } from "common/src";
+import RPC from "../etherRPC";
 
 export default function PaymentDetails(props) {
   const { api, appcat } = useContext(FirebaseContext);
@@ -29,11 +32,25 @@ export default function PaymentDetails(props) {
   const { booking } = props.route.params;
   const [promodalVisible, setPromodalVisible] = useState(false);
   const [useWalletCash, setUseWalletCash] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
   const { t } = i18n;
   const isRTL =
     i18n.locale.indexOf("he") === 0 || i18n.locale.indexOf("ar") === 0;
 
   const [userdata, setUserdata] = useState();
+
+  const [hasPay, setHasPay] = useState(false);
+
+  const checkHasPay = async () => {
+    RPC.getBalance(booking.addressContract).then((res) => {
+      if (res[0] === 0) {
+        setHasPay(true);
+        setModalVisible(true);
+      } else {
+        console.log("res", res[0]);
+      }
+    });
+  };
 
   useEffect(() => {
     if (auth.info && auth.info.profile) {
@@ -153,8 +170,8 @@ export default function PaymentDetails(props) {
 
   const doPayment = (payment_mode) => {
     if (payment_mode == "cash" || payment_mode == "wallet") {
+      checkHasPay();
       let curBooking = { ...booking };
-      console.log("booking");
       if (booking.status == "PAYMENT_PENDING") {
         curBooking.status = "NEW";
       } else {
@@ -381,6 +398,70 @@ export default function PaymentDetails(props) {
         <Text style={{ color: colors.WHITE }}>{t("cancel")}</Text>
       </TouchableOpacity>
     ) : null;
+
+  const ModalPaymentSuccess = () => {
+    return (
+      <Modal animationType="fade" transparent={true} visible={modalVisible}>
+        <View style={styles.centeredView}>
+          <KeyboardAvoidingView behavior={"position"}>
+            <View
+              style={[
+                styles.modalView,
+                {
+                  height: 260,
+                },
+              ]}
+            >
+              {/* Close modal*/}
+              <View
+                style={{
+                  position: "absolute",
+                  right: 10,
+                  top: 10,
+                  zIndex: 10,
+                }}
+              >
+                <Icon
+                  name="close"
+                  type="material"
+                  size={30}
+                  onPress={() => {
+                    setModalVisible(false);
+                  }}
+                />
+              </View>
+              <View
+                style={{
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+
+                  gap: 20,
+                }}
+              >
+                <Icon
+                  name="check-circle"
+                  type="material"
+                  size={80}
+                  color={colors.GREEN_DOT}
+                />
+                <Text
+                  style={{
+                    fontSize: 20,
+                    fontWeight: "bold",
+                    width: 200,
+                    textAlign: "center",
+                  }}
+                >
+                  ¡Misión cumplida! Pago liberado por finalizar el viaje
+                </Text>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
+    );
+  };
 
   return (
     <View style={styles.mainView}>
@@ -664,7 +745,11 @@ export default function PaymentDetails(props) {
                   }}
                 >
                   {settings.symbol}{" "}
-                  {parseFloat(payDetails.amount).toFixed(settings.decimal)}
+                  {payDetails.payableAmount
+                    ? parseFloat(payDetails.payableAmount).toFixed(
+                        settings.decimal
+                      )
+                    : 0.0}
                 </Text>
               ) : (
                 <Text
@@ -675,8 +760,12 @@ export default function PaymentDetails(props) {
                     fontSize: 16,
                   }}
                 >
-                  {parseFloat(payDetails.amount).toFixed(settings.decimal)}{" "}
-                  {settings.symbol}
+                  {settings.symbol}{" "}
+                  {payDetails.payableAmount
+                    ? parseFloat(payDetails.payableAmount).toFixed(
+                        settings.decimal
+                      )
+                    : 0.0}
                 </Text>
               )}
             </View>
@@ -723,13 +812,13 @@ export default function PaymentDetails(props) {
               ) : (
                 <Text
                   style={{
-                    color: colors.DULL_RED,
+                    color: colors.PINK,
                     textAlign: isRTL ? "right" : "left",
                     lineHeight: 45,
                     fontSize: 16,
                   }}
                 >
-                  {isRTL ? null : "-"}{" "}
+                  {settings.symbol} {isRTL ? null : "-"}{" "}
                   {payDetails
                     ? payDetails.discount
                       ? parseFloat(payDetails.discount).toFixed(
@@ -737,7 +826,7 @@ export default function PaymentDetails(props) {
                         )
                       : "0.00"
                     : "0.00"}{" "}
-                  {settings.symbol} {isRTL ? "-" : null}
+                  {isRTL ? "-" : null}
                 </Text>
               )}
             </View>
@@ -872,7 +961,7 @@ export default function PaymentDetails(props) {
                   fontWeight: "500",
                 }}
               >
-                {t("payable_ammount")}
+                Precio total del viaje
               </Text>
               {settings.swipe_symbol === false ? (
                 <Text
@@ -901,12 +990,12 @@ export default function PaymentDetails(props) {
                     fontWeight: "bold",
                   }}
                 >
+                  {settings.symbol}{" "}
                   {payDetails.payableAmount
                     ? parseFloat(payDetails.payableAmount).toFixed(
                         settings.decimal
                       )
-                    : 0.0}{" "}
-                  {settings.symbol}
+                    : 0.0}
                 </Text>
               )}
             </View>
@@ -963,6 +1052,7 @@ export default function PaymentDetails(props) {
           </View>
         )}
       </ScrollView>
+      <ModalPaymentSuccess />
       {promoModal()}
     </View>
   );
@@ -1014,6 +1104,23 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 10,
     paddingHorizontal: 20,
+  },
+  button: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    width: 135,
+    borderRadius: 4,
+    elevation: 3,
+    backgroundColor: colors.BLUE,
+  },
+  text: {
+    fontSize: 16,
+    lineHeight: 21,
+    fontWeight: "bold",
+    letterSpacing: 0.25,
+    color: "white",
   },
   cardPayBtn: {
     marginHorizontal: 6,
@@ -1254,5 +1361,28 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontSize: 15,
     lineHeight: 20,
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: colors.BACKGROUND,
+  },
+  modalView: {
+    width: 350,
+    backgroundColor: "white",
+    justifyContent: "center",
+    alignContent: "center",
+    borderRadius: 20,
+    padding: 20,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
 });

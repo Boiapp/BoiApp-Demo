@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import "@walletconnect/react-native-compat";
-import { useWalletConnect } from "@walletconnect/react-native-dapp";
+import { Web3Modal, useWeb3Modal } from "@web3modal/react-native";
 import { FirebaseContext, store } from "common/src";
 import Constants, { AppOwnership } from "expo-constants";
 import * as Linking from "expo-linking";
@@ -36,13 +36,42 @@ const resolvedRedirectUrl =
   Constants.appOwnership == AppOwnership.Expo ||
   Constants.appOwnership == AppOwnership.Guest
     ? Linking.createURL("boiapp", {})
-    : Linking.createURL("boiapp", { scheme: scheme });
+    : Linking.createURL("boiapp", { scheme: "boiapp" });
 
 const clientId =
   "BHfljXu1a2K3_4YjSJC5T_kpY0Pl5-7jmR36JXD7hEWpqe-HkRhHr4neH-kpMX84YmJSDxr0tiIwF_iy2N9jtdo";
 
 import RPC from "../../etherRPC";
 import { ConnectionMode } from "../../types/types";
+const PROJECT_ID = "df2f9c8bbe8321067bc9228e7258375b";
+const clientMeta = {
+  name: "BoiApp",
+  description: "dApp by BoiApp",
+  url: "https://walletconnect.com/",
+  icons: ["https://avatars.githubusercontent.com/u/37784886"],
+  redirect: {
+    native: "boiapp://",
+    universal: "YOUR_APP_UNIVERSAL_LINK.com",
+  },
+};
+export const sessionParams = {
+  namespaces: {
+    eip155: {
+      methods: [
+        "eth_sendTransaction",
+        "eth_signTransaction",
+        "eth_sign",
+        "personal_sign",
+        "eth_signTypedData",
+      ],
+      chains: ["eip155:80001"],
+      events: ["chainChanged", "accountsChanged"],
+      rpcMap: {
+        80001: `https://rpc.walletconnect.com?chainId=eip155:80001&projectId=${PROJECT_ID}`,
+      },
+    },
+  },
+};
 
 export default function Welcome(props) {
   const { api } = useContext(FirebaseContext);
@@ -115,22 +144,11 @@ export default function Welcome(props) {
   }, []);
 
   /* WalletConnect */
-  const connector = useWalletConnect();
-  const connectWallet = useCallback(async () => {
-    await connector.connect().then((res) => {
-      setConnectByWc(true);
-      setWalletAddress(res.accounts[0]);
-      setConnectionMode(ConnectionMode.WALLETCONNECT);
-    });
-    try {
-      if (!connectByWc || !connector.connected) {
-        return await connector.createSession({ chainId: 80001 });
-      }
-    } catch (e) {
-      console.log("catch", e);
-    }
-    return;
-  }, [connector]);
+  const { isConnected, provider, open, address } = useWeb3Modal();
+
+  const connectWallet = () => {
+    open();
+  };
 
   const handleRegister = () => {
     props.navigation.navigate("Register", {
@@ -142,10 +160,15 @@ export default function Welcome(props) {
   };
 
   const handleSignOut = async () => {
-    if (connector.connected && connectByWc) {
-      await connector.killSession().then(() => {
-        setConnectByWc(false);
-      });
+    if (provider && connectByWc) {
+      await provider
+        .disconnect()
+        .then(() => {
+          setConnectByWc(false);
+        })
+        .catch((e) => {
+          throw e;
+        });
     }
     if (connectByW3A) {
       web3Auth.logout();
@@ -201,11 +224,12 @@ export default function Welcome(props) {
   }, [connectByW3A, connectByWc, walletAddress, handleCheckUserExists]);
 
   useEffect(() => {
-    if (connector.connected && !connectByWc) {
+    if (isConnected && address) {
       setConnectByWc(true);
-      setWalletAddress(connector.accounts[0]);
+      setWalletAddress(address);
+      setConnectionMode(ConnectionMode.WALLETCONNECT);
     }
-  }, [connector.connected, connector.accounts, connectByWc]);
+  }, [isConnected, address, connectByWc, walletAddress, connectionMode]);
 
   useEffect(() => {
     if (auth.token) {
@@ -239,7 +263,7 @@ export default function Welcome(props) {
 
   const unloggedInView = (
     <View style={styles.buttonAreaWC}>
-      {!connectByWc && !connector.connected && (
+      {!connectByWc && !isConnected && (
         <Button
           title="Wallet"
           type="outline"
@@ -367,7 +391,7 @@ export default function Welcome(props) {
           loading={loading}
         />
       )}
-      {(connectByWc && connector.connected) ||
+      {(connectByWc && isConnected) ||
         (connectByW3A && !userExists && (
           <Button
             title={t("sign_up")}
@@ -378,7 +402,7 @@ export default function Welcome(props) {
             loading={loading}
           />
         ))}
-      {connector.connected && (
+      {isConnected && (
         <Button
           title={t("disconnect")}
           type="outline"
@@ -428,6 +452,11 @@ export default function Welcome(props) {
           type="clear"
           onPress={ErrorTest}
           titleStyle={styles.buttonSecondary}
+        />
+        <Web3Modal
+          projectId={PROJECT_ID}
+          providerMetadata={clientMeta}
+          sessionParams={sessionParams}
         />
       </SafeAreaView>
     </ImageBackground>

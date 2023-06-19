@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useWalletConnect } from "@walletconnect/react-native-dapp";
 import { FirebaseContext } from "common/src";
 import * as ImagePicker from "expo-image-picker";
 import i18n from "i18n-js";
@@ -18,15 +17,14 @@ import {
 } from "react-native";
 import ActionSheet from "react-native-actions-sheet";
 import { Button, Header, Icon, Input } from "react-native-elements";
-import RNPickerSelect from "react-native-picker-select";
-import RadioForm from "react-native-simple-radio-button";
+import { Picker } from "@react-native-picker/picker";
 import { useSelector } from "react-redux";
 import { colors } from "../common/theme";
-import Background from "./Background";
+import { useWeb3Modal } from "@web3modal/react-native";
 var { height, width } = Dimensions.get("window");
 
 export default function RegistrationWeb3(props) {
-  const connector = useWalletConnect();
+  const { provider } = useWeb3Modal();
   const { walletAddress, userInfo } = props;
   const { t } = i18n;
   const isRTL =
@@ -71,9 +69,9 @@ export default function RegistrationWeb3(props) {
   ];
 
   const killSession = React.useCallback(() => {
-    connector.killSession();
+    provider?.disconnect();
     props.onPressBack();
-  }, [connector]);
+  }, [provider]);
 
   const formatCountries = () => {
     let arr = [];
@@ -98,7 +96,7 @@ export default function RegistrationWeb3(props) {
     if (state.wallet === "" && walletAddress) {
       setState({ ...state, wallet: walletAddress });
     }
-  }, [connector]);
+  }, [walletAddress]);
 
   const showActionSheet = () => {
     actionSheetRef.current?.setModalVisible(true);
@@ -501,43 +499,26 @@ export default function RegistrationWeb3(props) {
                   { flexDirection: isRTL ? "row-reverse" : "row" },
                 ]}
               >
-                <RNPickerSelect
-                  placeholder={{}}
-                  value={state.usertype}
-                  useNativeAndroidPickerStyle={false}
-                  style={{
-                    inputIOS: [
-                      styles.pickerStyle,
-                      {
-                        marginBottom: 20,
-                      },
-                    ],
-                    placeholder: {
-                      color: "#6382FC",
-                    },
-                    inputAndroid: [
-                      styles.pickerStyle,
-                      {
-                        marginBottom: 20,
-                      },
-                    ],
-                  }}
+                <Picker
+                  selectedValue={role}
+                  style={styles.pickerStyle}
+                  mode="dialog"
+                  itemStyle={styles.itemPickerStyle}
                   onValueChange={(value) => {
                     setRole(value);
                     setUserType(value);
                   }}
-                  items={radio_props}
-                  Icon={() => {
+                >
+                  {radio_props.map((item, index) => {
                     return (
-                      <Ionicons
-                        style={{ top: 7, marginRight: isRTL ? "80%" : "0%" }}
-                        name="md-arrow-down"
-                        size={24}
-                        color="#6382FC"
+                      <Picker.Item
+                        key={index}
+                        label={item.label}
+                        value={item.value}
                       />
                     );
-                  }}
-                />
+                  })}
+                </Picker>
               </View>
 
               {state.usertype == "driver" && (
@@ -551,32 +532,23 @@ export default function RegistrationWeb3(props) {
                 >
                   <Text style={styles.headerStyle}>{t("typeofCar")}</Text>
                   {props.cars && (
-                    <RNPickerSelect
-                      placeholder={{}}
-                      value={state.carType}
-                      useNativeAndroidPickerStyle={false}
-                      style={{
-                        inputIOS: [styles.pickerStyle],
-                        placeholder: {
-                          color: "#6382FC",
-                        },
-                        inputAndroid: [styles.pickerStyle],
-                      }}
+                    <Picker
+                      selectedValue={state.carType}
+                      style={styles.pickerStyle}
                       onValueChange={(value) =>
                         setState({ ...state, carType: value })
                       }
-                      items={props.cars}
-                      Icon={() => {
+                    >
+                      {props.cars.map((item, index) => {
                         return (
-                          <Ionicons
-                            style={{ top: 7, marginRight: isRTL ? "80%" : 0 }}
-                            name="md-arrow-down"
-                            size={24}
-                            color="#6382FC"
+                          <Picker.Item
+                            key={index}
+                            label={item.label}
+                            value={item.value}
                           />
                         );
-                      }}
-                    />
+                      })}
+                    </Picker>
                   )}
                 </View>
               )}
@@ -960,11 +932,15 @@ const styles = {
   },
   pickerStyle: {
     color: colors.BLUE,
-    width: 200,
+    width: 170,
     fontSize: 15,
     height: 40,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.BLUE,
+    borderRadius: 10,
+    textAlign: "center",
+  },
+  itemPickerStyle: {
+    color: colors.BLUE,
+    fontSize: 15,
     textAlign: "center",
   },
   inputTextStyle: {

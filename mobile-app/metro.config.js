@@ -1,17 +1,22 @@
-const { createMetroConfiguration } = require("expo-yarn-workspaces");
-const config = createMetroConfiguration(__dirname);
+const { getDefaultConfig } = require("@expo/metro-config");
+const config = getDefaultConfig(__dirname);
 
 config.resolver.extraNodeModules = {
-  // ...config.resolver.extraNodeModules,
-  // node_libs_react_native: require.resolve("node-libs-react-native"),
+  ...config.resolver.extraNodeModules,
   stream: require.resolve("stream-browserify"),
-  // http: require.resolve("stream-http"),
-  // https: require.resolve("https-browserify"),
-  // os: require.resolve("os-browserify/browser"),
-  extraNodeModules: require("expo-crypto-polyfills"),
+  crypto: require.resolve("crypto-browserify"),
   randombytes: require.resolve("react-native-randombytes"),
 };
 
-// config.resolver.assetExts.push("cjs");
+config.resolver.sourceExts = [
+  ...config.resolver.sourceExts,
+  "cjs",
+  "mjs",
+  "js",
+  "json",
+  "ts",
+  "tsx",
+  "jsx",
+];
 
 module.exports = config;

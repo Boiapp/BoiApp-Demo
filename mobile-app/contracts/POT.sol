@@ -130,7 +130,7 @@ contract POT is ReentrancyGuard {
         deliveryByDriver = true;
         if (deliveryByApp) {
             currState = State.COMPLETE;
-            }
+        }
         finishTrip();
     }
 
@@ -144,34 +144,31 @@ contract POT is ReentrancyGuard {
         contractSettled = true;
         if (deliveryByDriver) {
             currState = State.COMPLETE;
-            }
+        }
         finishTrip();
-        // token.transfer(driver, amountPayable);
-        // token.transfer(arbitrator, arbitrationFee);
     }
 
     //function intern called by contract for match gps location and confirm by driver
     function finishTrip() internal {
-        require(!isTripFinished && activatedByPassenger, "Trip already finished");
-            if (currState == State.COMPLETE && deliveryByPassenger) {
-                token.transfer(driver, amountPayable);
-                token.transfer(arbitrator, arbitrationFee);
-            }
-            if (
-                currState == State.COMPLETE &&
-                deliveryByDriver &&
-                deliveryByApp
-            ) {
-                token.transfer(driver, amountPayable);
-                token.transfer(arbitrator, arbitrationFee);
-            }
+        require(
+            !isTripFinished && activatedByPassenger,
+            "Trip already finished"
+        );
+        if (currState == State.COMPLETE && deliveryByPassenger) {
+            token.transfer(driver, amountPayable);
+            token.transfer(arbitrator, arbitrationFee);
+            isTripFinished = true;
+        }
+        if (currState == State.COMPLETE && deliveryByDriver && deliveryByApp) {
+            token.transfer(driver, amountPayable);
+            token.transfer(arbitrator, arbitrationFee);
+            isTripFinished = true;
+        }
     }
 
     //called by anyone(generally driver if timeToRaiseDispute is passed
     function forceSettle() public {
-        require(
-            block.timestamp > (timeToRaiseDispute + contractActivatedTime)
-        );
+        require(block.timestamp > (timeToRaiseDispute + contractActivatedTime));
         payable(passenger).transfer(arbitrationFee);
         uint256 amountPayable_to_driver = arbitrationFee + amountPayable;
         payable(driver).transfer(amountPayable_to_driver);

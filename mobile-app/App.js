@@ -20,7 +20,6 @@ import AppCommon from "./AppCommon";
 import AppCat from "./config/AppCat";
 import { FirebaseConfig } from "./config/FirebaseConfig";
 import { colors } from "./src/common/theme";
-import WalletConnectProvider from "@walletconnect/react-native-dapp";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RootSiblingParent } from "react-native-root-siblings";
 
@@ -46,7 +45,6 @@ export default function App() {
       Asset.loadAsync([
         require("./assets/images/background.jpg"),
         require("./assets/images/logo165x90white.png"),
-        require("./assets/images/bg.jpg"),
         require("./assets/images/intro.jpg"),
         require("./assets/images/navMap.png"),
       ]),
@@ -93,25 +91,6 @@ export default function App() {
     }
   };
 
-  const walletConnectOptions = {
-    storageOptions: {
-      // @ts-ignore
-      asyncStorage: AsyncStorage,
-    },
-    qrcodeModalOptions: {
-      mobileLinks: [
-        "rainbow",
-        "metamask",
-        "argent",
-        "trust",
-        "imtoken",
-        "pillar",
-      ],
-    },
-    // Uncomment to show a QR-code to connect a wallet
-    //renderQrcodeModal: Qrcode,
-  };
-
   if (!assetsLoaded) {
     return (
       <View style={styles.container}>
@@ -132,25 +111,22 @@ export default function App() {
 
   return (
     <RootSiblingParent>
-      <WalletConnectProvider {...walletConnectOptions}>
-        <Provider store={store}>
-          <FirebaseProvider
-            config={FirebaseConfig}
-            appcat={AppCat}
-            AsyncStorage={AsyncStorage}
-          >
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <AppCommon>
-                <AppContainer />
-              </AppCommon>
-            </GestureHandlerRootView>
-          </FirebaseProvider>
-        </Provider>
-      </WalletConnectProvider>
+      <Provider store={store}>
+        <FirebaseProvider
+          config={FirebaseConfig}
+          appcat={AppCat}
+          AsyncStorage={AsyncStorage}
+        >
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <AppCommon>
+              <AppContainer />
+            </AppCommon>
+          </GestureHandlerRootView>
+        </FirebaseProvider>
+      </Provider>
     </RootSiblingParent>
   );
 }
-/* </WalletConnectProvider> */
 
 const styles = StyleSheet.create({
   container: {

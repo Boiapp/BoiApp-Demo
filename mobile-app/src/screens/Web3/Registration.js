@@ -5,7 +5,6 @@ import { useSelector } from "react-redux";
 
 import i18n from "i18n-js";
 import { FirebaseContext, store } from "common/src";
-import { useWalletConnect } from "@walletconnect/react-native-dapp";
 
 export default function RegistrationScreen(props) {
   const { api } = useContext(FirebaseContext);

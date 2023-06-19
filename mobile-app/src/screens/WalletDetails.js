@@ -309,7 +309,7 @@ export default function WalletDetails(props) {
                     padding: 10,
                   }}
                 >
-                  <QRCode value={walletAddress} />
+                  <QRCode value={walletAddress ? walletAddress : ""} />
                 </View>
                 <Text
                   style={{

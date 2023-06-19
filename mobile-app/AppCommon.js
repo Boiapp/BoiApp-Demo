@@ -12,7 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from "expo-av";
 import moment from "moment/min/moment-with-locales";
 import { AuthLoadingScreen } from "./src/screens";
-import { useWalletConnect } from "@walletconnect/react-native-dapp";
+import { useWeb3Modal } from "@web3modal/react-native";
 
 const LOCATION_TASK_NAME = "background-location-task";
 
@@ -54,8 +54,8 @@ export default function AppCommon({ children }) {
   const authState = useRef("loading");
   const locationLoading = useRef(true);
   const fetchingToken = useRef(true);
-  const connector = useWalletConnect();
-  const walletConnect = connector.connected ? connector.accounts[0] : null;
+  const { isConnected, address } = useWeb3Modal();
+  const walletConnect = isConnected ? address : null;
 
   useEffect(() => {
     if (languagedata.langlist) {
@@ -78,8 +78,7 @@ export default function AppCommon({ children }) {
           moment.locale(defl.dateLocale);
         }
       });
-      console.log("paso por aca");
-      if (connector.connected) {
+      if (isConnected) {
         const walletId = {
           wallet: walletConnect,
         };
@@ -488,7 +487,6 @@ export default function AppCommon({ children }) {
           saveToken();
           fetchingToken.current = false;
           if (role === "rider") {
-            console.log("rider", auth);
             dispatch(api.monitorProfileChanges());
             dispatch(api.fetchDrivers());
             dispatch(api.fetchBookings(auth.info.uid, role));

@@ -6,7 +6,7 @@ import {
   Modal,
   KeyboardAvoidingView,
 } from "react-native";
-import RNPickerSelect from "react-native-picker-select";
+import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
 
 import { colors } from "../common/theme";
@@ -19,15 +19,12 @@ export default function DeliveryModal2(props) {
   const isRTL =
     i18n.locale.indexOf("he") === 0 || i18n.locale.indexOf("ar") === 0;
   const [token, setToken] = useState("USDT");
-  const { height, width } = useWindowDimensions();
   const {
     settings,
     estimate,
     bookingModalStatus,
     onPressCancel,
     bookNow,
-    instructionData,
-    setInstructionData,
     profile,
     contractLoading,
     tripDrop,
@@ -192,6 +189,7 @@ export default function DeliveryModal2(props) {
                 marginTop: 8,
                 flexDirection: "column",
                 marginHorizontal: 95,
+                height: 80,
               }}
             >
               <Text style={{ color: colors.BLUE, textAlign: "center" }}>
@@ -199,7 +197,10 @@ export default function DeliveryModal2(props) {
               </Text>
               <View
                 style={{
-                  width: "auto",
+                  width: 120,
+                  flex: 1,
+                  justifyContent: "center",
+                  alignItems: "center",
                   backgroundColor: "#E2e8f0",
                   borderRadius: 9,
                 }}
@@ -217,144 +218,40 @@ export default function DeliveryModal2(props) {
             </View>
             {estimate && (
               <View style={styles.rateViewStyle}>
-                {settings.swipe_symbol === false ? (
-                  <RNPickerSelect
-                    placeholder={{}}
-                    value={0}
-                    useNativeAndroidPickerStyle={false}
-                    style={{
-                      inputIOS: [styles.pickerStyle],
-                      placeholder: {
-                        color: "#6382FC",
-                      },
-                      inputAndroid: [styles.pickerStyle],
-                    }}
-                    onValueChange={(value) => {
-                      console.log(value);
-                    }}
-                    items={[
-                      {
-                        label: "Orange",
-                        value: "orange",
-                        key: "orange",
-                        color: "orange",
-                        inputLabel: "Orange!",
-                      },
-                      {
-                        label: "red",
-                        value: "red",
-                        key: "red",
-                        color: "red",
-                        inputLabel: "red!",
-                      },
-                    ]}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignContent: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#E2E8F0",
+                    borderRadius: 8,
+                    width: 120,
+                    gap: 10,
+                    marginVertical: 12,
+                  }}
+                >
+                  <Image
+                    source={require("../../assets/images/USDT.png")}
+                    resizeMode="contain"
+                    style={{ width: 40, marginVertical: 10 }}
                   />
-                ) : (
-                  // <Text style={styles.rateViewTextStyle}>
-                  //   {settings.symbol}
-                  //   {estimate.estimateFare > 0
-                  //     ? parseFloat(estimate.estimateFare).toFixed(
-                  //         settings.decimal
-                  //       )
-                  //     : 0}
-                  // </Text>
-                  <View
+                  <Text
                     style={{
-                      flexDirection: "row",
-                      alignContent: "center",
-                      justifyContent: "center",
-                      backgroundColor: "#E2E8F0",
-                      borderRadius: 8,
-                      paddingHorizontal: 16,
-                      marginVertical: 12,
+                      fontSize: 20,
+                      lineHeight: 28,
+                      fontWeight: "700",
+                      color: colors.SLATE,
+                      marginVertical: 10,
                     }}
                   >
-                    <Image
-                      source={
-                        token === "USDT"
-                          ? require("../../assets/images/tether-usdt.png")
-                          : require("../../assets/images/polygon-matic.png")
-                      }
-                      resizeMode="contain"
-                      style={{ width: 40, marginVertical: 20 }}
-                    />
-                    <RNPickerSelect
-                      placeholder={{
-                        label: `${settings.symbol}${
-                          estimate.estimateFare > 0
-                            ? parseFloat(estimate.estimateFare).toFixed(
-                                settings.decimal
-                              )
-                            : 0
-                        }`,
-                        value: null,
-                        color: "#9EA0A4",
-                      }}
-                      value={0}
-                      useNativeAndroidPickerStyle={false}
-                      style={{
-                        inputIOS: [styles.pickerStyle],
-                        placeholder: {
-                          color: "#6382FC",
-                        },
-                        inputAndroid: [styles.pickerStyle],
-                      }}
-                      onValueChange={(value) => {
-                        setToken(value);
-                      }} // TODO: Setear contract address
-                      items={[
-                        {
-                          label: `USDT`,
-                          value: "USDT",
-                          key: "USDT",
-                          inputLabel: `${settings.symbol}${
-                            estimate.estimateFare > 0
-                              ? parseFloat(estimate.estimateFare).toFixed(
-                                  settings.decimal
-                                )
-                              : 0
-                          }`,
-                        },
-                        {
-                          label: "MATIC",
-                          value: "MATIC",
-                          key: "MATIC",
-                          inputLabel: `${settings.symbol}${
-                            estimate.estimateFare > 0
-                              ? parseFloat(estimate.estimateFare).toFixed(
-                                  settings.decimal
-                                )
-                              : 0
-                          }`,
-                        },
-                      ]}
-                      fixAndroidTouchableBug={true}
-                      Icon={() => {
-                        return (
-                          <Ionicons
-                            style={{
-                              top: 18,
-                              marginRight: "80%",
-                              color: colors.BLUE,
-                              marginVertical: "auto",
-                            }}
-                            name="md-arrow-down"
-                            size={24}
-                            color="gray"
-                          />
-                        );
-                      }}
-                    />
-                  </View>
-                  // <Text style={styles.rateViewTextStyle}>
-                  //   {estimate.estimateFare > 0
-                  //     ? parseFloat(estimate.estimateFare).toFixed(
-                  //         settings.decimal
-                  //       )
-                  //     : 0}
-                  //   {settings.symbol}
-                  // </Text>
-                )}
+                    {settings.symbol}
+                    {estimate.estimateFare > 0
+                      ? parseFloat(estimate.estimateFare).toFixed(
+                          settings.decimal
+                        )
+                      : 0}
+                  </Text>
+                </View>
               </View>
             )}
             <View
@@ -502,7 +399,6 @@ const styles = StyleSheet.create({
   cardItemImagePlace: {
     width: 100,
     height: 60,
-    margin: 10,
     borderRadius: 5,
   },
   pickerStyle: {

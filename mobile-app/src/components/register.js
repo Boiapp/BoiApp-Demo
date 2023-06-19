@@ -17,7 +17,7 @@ import { colors } from "../common/theme";
 var { height } = Dimensions.get("window");
 import i18n from "i18n-js";
 import RadioForm from "react-native-simple-radio-button";
-import RNPickerSelect from "react-native-picker-select";
+// import RNPickerSelect from "react-native-picker-select";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useSelector } from "react-redux";
@@ -431,7 +431,7 @@ export default function Registration(props) {
                   ]}
                 />
 
-                <RNPickerSelect
+                {/* <RNPickerSelect
                   key={countryCode}
                   placeholder={{
                     label: t("select_country"),
@@ -467,7 +467,7 @@ export default function Registration(props) {
                       />
                     );
                   }}
-                />
+                /> */}
               </View>
               <View
                 style={[
@@ -570,7 +570,7 @@ export default function Registration(props) {
                       ]}
                     />
                   )}
-                  {props.cars ? (
+                  {/* {props.cars ? (
                     <RNPickerSelect
                       placeholder={{}}
                       value={state.carType}
@@ -603,7 +603,7 @@ export default function Registration(props) {
                         );
                       }}
                     />
-                  ) : null}
+                  ) : null} */}
                 </View>
               ) : null}
               {state.usertype == "driver" ? (

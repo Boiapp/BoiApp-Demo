@@ -19,9 +19,9 @@ import { FirebaseContext } from "common/src";
 import moment from "moment/min/moment-with-locales";
 import { ethers } from "ethers";
 import POT from "../../artifacts/contracts/POT.sol/POT.json";
-import { useWalletConnect } from "@walletconnect/react-native-dapp";
 import { API_KEY } from "@env";
 import { ConnectionMode } from "../types/types";
+import { useWeb3Modal } from "@web3modal/react-native";
 
 export default function DriverRating(props) {
   const { api } = useContext(FirebaseContext);
@@ -65,34 +65,11 @@ export default function DriverRating(props) {
   };
 
   /* INTERACTION SMART CONTRACT */
-  const connector = useWalletConnect();
+  const { address, isConnected, provider } = useWeb3Modal();
 
   const PassengerConfirm = async () => {
     setLoading(true);
     const addressContract = booking?.addressContract;
-    if (connector.chainId !== 80001) {
-      try {
-        await connector.sendCustomRequest({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: "0x13881" }],
-        });
-      } catch (err) {
-        try {
-          await connector.sendCustomRequest({
-            method: "wallet_addEthereumChain",
-            params: [
-              {
-                chainId: "0x13881",
-                chainName: "MUMBAI",
-                rpcUrls: ["https://rpc-mumbai.matic.today"],
-              },
-            ],
-          });
-        } catch (err) {
-          console.log("err", err);
-        }
-      }
-    }
     const alchemy = new ethers.providers.AlchemyProvider("maticmum", API_KEY);
     const ifacePOT = new ethers.utils.Interface(POT.abi);
     const confirmDelivery = ifacePOT.encodeFunctionData(
@@ -109,17 +86,23 @@ export default function DriverRating(props) {
     };
     try {
       if (connectionMode === ConnectionMode.WALLETCONNECT) {
-        await connector.sendTransaction(txPOT).then(async (res) => {
-          await alchemy
-            .waitForTransaction(res, 1)
-            .then((res) => {
-              setLoading(false);
-              return { res: "success" };
-            })
-            .catch((err) => {
-              console.log("err", err);
-            });
-        });
+        const result = await provider
+          .request({
+            method: "eth_sendTransaction",
+            params: [txPOT],
+          })
+          .then(async (res) => {
+            await alchemy
+              .waitForTransaction(res, 1)
+              .then((res) => {
+                setLoading(false);
+                return { res: "success" };
+              })
+              .catch((err) => {
+                console.log("err", err);
+              });
+          });
+        console.log("result", result);
       } else if (connectionMode === ConnectionMode.WEB3AUTH) {
         const wallet = new ethers.Wallet(auth.info.profile.pkey, alchemy);
         const tx = await wallet.sendTransaction(txPOT);
@@ -245,12 +228,12 @@ export default function DriverRating(props) {
           </Text>
         ) : (
           <Text style={styles.rateViewTextStyle}>
+            {settings.symbol}
             {booking
               ? booking.estimate > 0
                 ? parseFloat(booking.estimate).toFixed(settings.decimal)
                 : 0
               : null}
-            {settings.symbol}
           </Text>
         )}
       </View>
