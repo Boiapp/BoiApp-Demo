@@ -43,7 +43,7 @@ export default function App() {
   const _loadResourcesAsync = async () => {
     return Promise.all([
       Asset.loadAsync([
-        require("./assets/images/background.jpg"),
+        require("./assets/images/background02.png"),
         require("./assets/images/logo165x90white.png"),
         require("./assets/images/intro.jpg"),
         require("./assets/images/navMap.png"),

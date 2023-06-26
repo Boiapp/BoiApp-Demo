@@ -49,7 +49,6 @@ const SideMenuHeader = ({
             color={colors.WHITE}
             size={16}
             style={{ marginHorizontal: 8 }}
-            // className="mx-2"
           />
         </TouchableOpacity>
       </View>
@@ -100,7 +99,10 @@ const styles = {
     elevation: 2,
     position: "relative",
     flexDirection: "column",
+    paddingBottom: 12,
     borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
+    borderBottomLeftRadius: 12,
   },
   textStyle: {
     fontSize: 20,

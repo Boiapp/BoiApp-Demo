@@ -238,7 +238,7 @@ export default function EmailLoginScreen(props) {
   return (
     <KeyboardAvoidingView behavior={"position"} style={styles.container}>
       <ImageBackground
-        source={require("../../assets/images/background.jpg")}
+        source={require("../../assets/images/background02.png")}
         resizeMode="stretch"
         style={styles.imagebg}
       >

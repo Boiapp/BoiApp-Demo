@@ -12,7 +12,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../common/theme";
 import i18n from "i18n-js";
 import { Button, Image } from "react-native-elements";
-import { useWindowDimensions } from "react-native";
 
 export default function DeliveryModal2(props) {
   const { t } = i18n;
@@ -43,7 +42,7 @@ export default function DeliveryModal2(props) {
                 fontWeight: "800",
                 fontSize: 36,
                 lineHeight: 40,
-                marginHorizontal: 16,
+                textAlign: "center",
               }}
             >
               Confirma tu viaje
@@ -142,9 +141,9 @@ export default function DeliveryModal2(props) {
                 style={{
                   flexDirection: "column",
                   justifyContent: "center",
-                  marginHorizontal: 85,
-                  paddingVertical: 16,
                   width: 140,
+                  height: 80,
+                  marginHorizontal: 95,
                 }}
               >
                 <Text style={{ color: colors.SLATE, textAlign: "center" }}>
@@ -161,35 +160,13 @@ export default function DeliveryModal2(props) {
                 </Text>
               </View>
             </View>
-            {/* <View style={styles.textInputContainerStyle}>
-              <Input
-                editable={true}
-                underlineColorAndroid={colors.TRANSPARENT}
-                placeholder={t("deliveryInstructions")}
-                placeholderTextColor={colors.DRIVER_TRIPS_TEXT}
-                value={instructionData.deliveryInstructions}
-                keyboardType={"email-address"}
-                inputStyle={[
-                  styles.inputTextStyle,
-                  { textAlign: isRTL ? "right" : "left" },
-                ]}
-                onChangeText={(text) => {
-                  setInstructionData({
-                    ...instructionData,
-                    deliveryInstructions: text,
-                  });
-                }}
-                inputContainerStyle={styles.inputContainerStyle}
-                containerStyle={styles.textInputStyle}
-              />
-            </View> */}
 
             <View
               style={{
                 marginTop: 8,
                 flexDirection: "column",
-                marginHorizontal: 95,
                 height: 80,
+                alignSelf: "center",
               }}
             >
               <Text style={{ color: colors.BLUE, textAlign: "center" }}>
@@ -217,41 +194,40 @@ export default function DeliveryModal2(props) {
               </View>
             </View>
             {estimate && (
-              <View style={styles.rateViewStyle}>
-                <View
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignContent: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#E2E8F0",
+                  borderRadius: 8,
+                  width: 120,
+                  gap: 10,
+                  marginVertical: 12,
+                  alignSelf: "center",
+                }}
+              >
+                <Image
+                  source={require("../../assets/images/USDT.png")}
+                  resizeMode="contain"
+                  style={{ width: 40, marginVertical: 10 }}
+                />
+                <Text
                   style={{
-                    flexDirection: "row",
-                    alignContent: "center",
-                    justifyContent: "center",
-                    backgroundColor: "#E2E8F0",
-                    borderRadius: 8,
-                    width: 120,
-                    gap: 10,
-                    marginVertical: 12,
+                    fontSize: 20,
+                    lineHeight: 28,
+                    fontWeight: "700",
+                    color: colors.SLATE,
+                    marginVertical: 10,
                   }}
                 >
-                  <Image
-                    source={require("../../assets/images/USDT.png")}
-                    resizeMode="contain"
-                    style={{ width: 40, marginVertical: 10 }}
-                  />
-                  <Text
-                    style={{
-                      fontSize: 20,
-                      lineHeight: 28,
-                      fontWeight: "700",
-                      color: colors.SLATE,
-                      marginVertical: 10,
-                    }}
-                  >
-                    {settings.symbol}
-                    {estimate.estimateFare > 0
-                      ? parseFloat(estimate.estimateFare).toFixed(
-                          settings.decimal
-                        )
-                      : 0}
-                  </Text>
-                </View>
+                  {settings.symbol}
+                  {estimate.estimateFare > 0
+                    ? parseFloat(estimate.estimateFare).toFixed(
+                        settings.decimal
+                      )
+                    : 0}
+                </Text>
               </View>
             )}
             <View
@@ -302,11 +278,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.BACKGROUND,
   },
   modalView: {
-    margin: 20,
+    marginHorizontal: 20,
     backgroundColor: "white",
     borderRadius: 20,
     padding: 20,
-    alignItems: "flex-start",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
